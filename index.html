@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vegas Craps Table</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+            overflow-x: hidden;
+        }
+        
+        /* Casino Chip Styling */
+        .casino-chip {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .casino-chip:hover { transform: scale(1.1); }
+        .casino-chip:active { transform: scale(0.95); }
+        
+        .casino-chip::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            padding: 4px;
+            background: repeating-conic-gradient(
+                from 0deg,
+                var(--chip-color) 0deg 18deg,
+                white 18deg 36deg
+            );
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+        }
+        
+        .casino-chip::after {
+            content: '';
+            position: absolute;
+            inset: 8px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--chip-color);
+        }
+        
+        .chip-value {
+            position: relative;
+            z-index: 1;
+            color: var(--chip-color);
+            font-weight: 900;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+        
+        /* Craps Table Felt Green */
+        .felt-green {
+            background: linear-gradient(135deg, #0d5c0d 0%, #1a8b1a 50%, #0d5c0d 100%);
+        }
+        
+        /* Table Layout Boxes */
+        .bet-box {
+            border: 2px solid #ffd700;
+            background: rgba(255, 255, 255, 0.05);
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .bet-box:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #fff;
+        }
+        
+        .bet-box.active {
+            background: rgba(255, 215, 0, 0.2);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+        
+        /* Dice styling */
+        .die {
+            background: linear-gradient(145deg, #ffffff, #f0f0f0);
+            box-shadow: 
+                0 0 0 2px #000,
+                2px 2px 4px rgba(0,0,0,0.3),
+                inset -2px -2px 4px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+        
+        .die-dot {
+            width: 10px;
+            height: 10px;
+            background: #000;
+            border-radius: 50%;
+        }
+
+        /* Win/Loss Animation */
+        @keyframes winPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-50px) scale(0.5);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .win-loss-display {
+            animation: slideIn 0.3s ease-out, winPulse 0.6s ease-in-out;
+        }
+
+        /* Puck styling */
+        .puck {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 4px solid #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        }
+
+        .puck.on {
+            background: white;
+            color: black;
+        }
+
+        .puck.off {
+            background: black;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const STORAGE_KEY = 'craps-game-' + (window.location.hash.slice(1) || 'default');
+
+        const CrapsGame = () => {
+          const [gameState, setGameState] = useState(null);
+          const [playerId, setPlayerId] = useState(localStorage.getItem('craps-player-id'));
+          const [playerName, setPlayerName] = useState('');
+          const [selectedChips, setSelectedChips] = useState([]);
+          const [isRolling, setIsRolling] = useState(false);
+          const [diceValues, setDiceValues] = useState({ die1: 1, die2: 1 });
+          const [showJoinModal, setShowJoinModal] = useState(!playerId);
+          const [message, setMessage] = useState('');
+          const [dealerCall, setDealerCall] = useState('');
+          const [winLossDisplay, setWinLossDisplay] = useState(null); // { playerId, amount, type: 'win'/'loss' }
+
+          const CHIP_VALUES = [
+            { value: 1, color: '#ffffff', textColor: '#000000', name: 'White' },
+            { value: 5, color: '#ff0000', textColor: '#ffffff', name: 'Red' },
+            { value: 10, color: '#0066cc', textColor: '#ffffff', name: 'Blue' },
+            { value: 25, color: '#00aa00', textColor: '#ffffff', name: 'Green' },
+            { value: 50, color: '#ff6600', textColor: '#ffffff', name: 'Orange' }
+          ];
+          
+          const TABLE_MIN = 15;
+          const PROP_MIN = 1;
+          const STARTING_CHIPS = 250;
+          const MAX_PLAYERS = 6;
+
+          useEffect(() => {
+            const loadInterval = setInterval(() => {
+              loadGameState();
+            }, 1000);
+            loadGameState();
+            return () => clearInterval(loadInterval);
+          }, []);
+
+          const loadGameState = () => {
+            try {
+              const stored = localStorage.getItem(STORAGE_KEY);
+              if (stored) {
+                const state = JSON.parse(stored);
+                setGameState(state);
+                if (state.lastDice) {
+                  setDiceValues(state.lastDice);
+                }
+                if (state.lastDealerCall) {
+                  setDealerCall(state.lastDealerCall);
+                }
+              } else {
+                const newGame = initializeGame();
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(newGame));
+                setGameState(newGame);
+              }
+            } catch (error) {
+              console.error('Error loading game:', error);
+            }
+          };
+
+          const initializeGame = () => ({
+            players: [],
+            currentShooter: 0,
+            point: null,
+            phase: 'comeout',
+            lastDice: null,
+            lastTotal: null,
+            lastDealerCall: '',
+            bets: {},
+            gameId: Date.now()
+          });
+
+          const saveGameState = (newState) => {
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
+              setGameState(newState);
+            } catch (error) {
+              console.error('Error saving:', error);
+            }
+          };
+
+          const getDealerCall = (total, phase, point, die1, die2) => {
+            const isHard = die1 === die2;
+            const calls = {
+              2: ["Snake eyes!", "Craps, two!", "Aces!"],
+              3: ["Craps, three!", "Ace deuce!", "Craps!"],
+              4: isHard ? ["Hard four!", "Little Joe from Kokomo!"] : ["Easy four!", "Four, easy!"],
+              5: ["Five, no field!", "Fever five!"],
+              6: isHard ? ["Hard six!", "Six the hard way!"] : ["Easy six!", "Six, no field!"],
+              7: phase === 'comeout' ? ["Seven, winner seven!", "Front line winner!", "Pay the line!"] : ["Seven out, line away!", "Seven out!", "Take the don'ts!"],
+              8: isHard ? ["Hard eight!", "Eight the hard way!"] : ["Easy eight!", "Eight, no field!"],
+              9: ["Nine, center field!", "Nina!"],
+              10: isHard ? ["Hard ten!", "Big Dick!"] : ["Easy ten!", "Ten, easy!"],
+              11: ["Yo-leven!", "Yo!", "Eleven, front line winner!"],
+              12: ["Boxcars!", "Craps, twelve!", "Midnight!"]
+            };
+            
+            const options = calls[total] || [`${total}!`];
+            return options[Math.floor(Math.random() * options.length)];
+          };
+
+          const joinGame = () => {
+            if (!playerName.trim()) {
+              showMessage('Please enter a name');
+              return;
+            }
+            
+            const currentGame = gameState || initializeGame();
+            
+            if (currentGame.players.length >= MAX_PLAYERS) {
+              showMessage('Table is full (6 players max)');
+              return;
+            }
+
+            const newPlayerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            const newPlayer = {
+              id: newPlayerId,
+              name: playerName.trim(),
+              chips: STARTING_CHIPS,
+              joinedAt: Date.now()
+            };
+
+            const updatedGame = {
+              ...currentGame,
+              players: [...currentGame.players, newPlayer],
+              bets: { ...currentGame.bets, [newPlayerId]: {} }
+            };
+
+            saveGameState(updatedGame);
+            
+            setPlayerId(newPlayerId);
+            localStorage.setItem('craps-player-id', newPlayerId);
+            setShowJoinModal(false);
+            showMessage(`Welcome to the table, ${playerName}!`);
+          };
+
+          const rebuy = () => {
+            const player = gameState.players.find(p => p.id === playerId);
+            if (!player) return;
+
+            const updatedPlayers = gameState.players.map(p =>
+              p.id === playerId ? { ...p, chips: p.chips + STARTING_CHIPS } : p
+            );
+
+            saveGameState({ ...gameState, players: updatedPlayers });
+            showMessage(`Added $${STARTING_CHIPS} to your stack`);
+          };
+
+          const placeBet = (betType, betLabel) => {
+            const total = selectedChips.reduce((sum, chip) => sum + chip, 0);
+            
+            if (total === 0) {
+              showMessage('Select chips first');
+              return;
+            }
+
+            const player = gameState.players.find(p => p.id === playerId);
+            if (!player) return;
+
+            if (player.chips < total) {
+              showMessage('Not enough chips');
+              return;
+            }
+
+            if (['pass', 'dontpass'].includes(betType) && total < TABLE_MIN) {
+              showMessage(`Minimum $${TABLE_MIN} for Pass/Don't Pass`);
+              return;
+            }
+
+            if (total < PROP_MIN) {
+              showMessage(`Minimum $${PROP_MIN}`);
+              return;
+            }
+
+            if (gameState.phase === 'point' && ['pass', 'dontpass'].includes(betType)) {
+              const currentBets = gameState.bets[playerId] || {};
+              if (!currentBets[betType]) {
+                showMessage('Can only bet Pass/Don\'t Pass on come out roll');
+                return;
+              }
+            }
+
+            const updatedPlayers = gameState.players.map(p =>
+              p.id === playerId ? { ...p, chips: p.chips - total } : p
+            );
+
+            const currentBets = gameState.bets[playerId] || {};
+            const updatedBets = {
+              ...gameState.bets,
+              [playerId]: {
+                ...currentBets,
+                [betType]: (currentBets[betType] || 0) + total
+              }
+            };
+
+            saveGameState({
+              ...gameState,
+              players: updatedPlayers,
+              bets: updatedBets
+            });
+
+            setSelectedChips([]);
+            showMessage(`Placed $${total} on ${betLabel}`);
+          };
+
+          const rollDice = async () => {
+            if (isRolling) return;
+            
+            const shooter = gameState.players[gameState.currentShooter];
+            if (!shooter || shooter.id !== playerId) {
+              showMessage('Not your turn to shoot');
+              return;
+            }
+
+            setIsRolling(true);
+            setMessage('');
+            setDealerCall('');
+
+            for (let i = 0; i < 10; i++) {
+              setDiceValues({
+                die1: Math.floor(Math.random() * 6) + 1,
+                die2: Math.floor(Math.random() * 6) + 1
+              });
+              await new Promise(resolve => setTimeout(resolve, 80));
+            }
+
+            const die1 = Math.floor(Math.random() * 6) + 1;
+            const die2 = Math.floor(Math.random() * 6) + 1;
+            const total = die1 + die2;
+            
+            setDiceValues({ die1, die2 });
+            
+            const call = getDealerCall(total, gameState.phase, gameState.point, die1, die2);
+            setDealerCall(call);
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            processRoll(die1, die2, total, call);
+            
+            setIsRolling(false);
+          };
+
+          const processRoll = (die1, die2, total, call) => {
+            let updatedGame = {
+              ...gameState,
+              lastDice: { die1, die2 },
+              lastTotal: total,
+              lastDealerCall: call
+            };
+
+            const payouts = {};
+            const losses = {};
+            let messages = [];
+
+            gameState.players.forEach(p => {
+              payouts[p.id] = 0;
+              losses[p.id] = 0;
+            });
+
+            if (gameState.phase === 'comeout') {
+              if (total === 7 || total === 11) {
+                messages.push('Natural! Pass wins');
+                gameState.players.forEach(p => {
+                  const bets = gameState.bets[p.id] || {};
+                  if (bets.pass) {
+                    payouts[p.id] += bets.pass; // Win amount (original bet returns separately)
+                  }
+                  if (bets.dontpass) {
+                    losses[p.id] += bets.dontpass;
+                  }
+                });
+                updatedGame.bets = clearBetsForAllPlayers(gameState.bets, ['pass', 'dontpass']);
+              } else if (total === 2 || total === 3 || total === 12) {
+                messages.push('Craps!');
+                gameState.players.forEach(p => {
+                  const bets = gameState.bets[p.id] || {};
+                  if (bets.pass) {
+                    losses[p.id] += bets.pass;
+                  }
+                  if (bets.dontpass) {
+                    if (total === 12) {
+                      // Push - return bet, no win/loss
+                    } else {
+                      payouts[p.id] += bets.dontpass;
+                    }
+                  }
+                });
+                updatedGame.bets = clearBetsForAllPlayers(gameState.bets, ['pass', 'dontpass']);
+              } else {
+                messages.push(`Point is ${total}`);
+                updatedGame.point = total;
+                updatedGame.phase = 'point';
+              }
+            } else {
+              if (total === 7) {
+                messages.push('Seven out!');
+                gameState.players.forEach(p => {
+                  const bets = gameState.bets[p.id] || {};
+                  if (bets.pass) losses[p.id] += bets.pass;
+                  if (bets.passodds) losses[p.id] += bets.passodds;
+                  if (bets.dontpass) payouts[p.id] += bets.dontpass;
+                  if (bets.dontpassodds) {
+                    const oddsWin = getOddsWin(gameState.point, bets.dontpassodds);
+                    payouts[p.id] += oddsWin;
+                  }
+                  
+                  // Place bets lose on 7
+                  [4,5,6,8,9,10].forEach(num => {
+                    if (bets[`place${num}`]) losses[p.id] += bets[`place${num}`];
+                  });
+                  
+                  // Hardways lose on 7
+                  [4,6,8,10].forEach(num => {
+                    if (bets[`hard${num}`]) losses[p.id] += bets[`hard${num}`];
+                  });
+                  
+                  // Buy bets lose on 7
+                  [4,5,6,8,9,10].forEach(num => {
+                    if (bets[`buy${num}`]) losses[p.id] += bets[`buy${num}`];
+                  });
+                });
+                
+                updatedGame.point = null;
+                updatedGame.phase = 'comeout';
+                updatedGame.currentShooter = (gameState.currentShooter + 1) % gameState.players.length;
+                updatedGame.bets = {};
+              } else if (total === gameState.point) {
+                messages.push('Point made! Pass wins');
+                gameState.players.forEach(p => {
+                  const bets = gameState.bets[p.id] || {};
+                  if (bets.pass) payouts[p.id] += bets.pass;
+                  if (bets.passodds) {
+                    const oddsWin = getOddsWin(gameState.point, bets.passodds);
+                    payouts[p.id] += oddsWin;
+                  }
+                  if (bets.dontpass) losses[p.id] += bets.dontpass;
+                  if (bets.dontpassodds) losses[p.id] += bets.dontpassodds;
+                });
+                
+                updatedGame.point = null;
+                updatedGame.phase = 'comeout';
+                updatedGame.bets = clearBetsForAllPlayers(gameState.bets, ['pass', 'dontpass', 'passodds', 'dontpassodds']);
+              }
+            }
+
+            // Field bets
+            if ([2, 3, 4, 9, 10, 11, 12].includes(total)) {
+              gameState.players.forEach(p => {
+                const bets = gameState.bets[p.id] || {};
+                if (bets.field) {
+                  if (total === 2 || total === 12) {
+                    payouts[p.id] += bets.field * 2; // 2:1 payout
+                  } else {
+                    payouts[p.id] += bets.field; // 1:1 payout
+                  }
+                }
+              });
+              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['field']);
+            } else {
+              gameState.players.forEach(p => {
+                const bets = gameState.bets[p.id] || {};
+                if (bets.field) losses[p.id] += bets.field;
+              });
+              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['field']);
+            }
+
+            // Place bets
+            if ([4, 5, 6, 8, 9, 10].includes(total) && total !== 7) {
+              gameState.players.forEach(p => {
+                const bets = gameState.bets[p.id] || {};
+                const placeKey = `place${total}`;
+                if (bets[placeKey]) {
+                  const win = getPlaceWin(total, bets[placeKey]);
+                  payouts[p.id] += win;
+                }
+              });
+            }
+
+            // Hardways
+            if (die1 === die2 && [4, 6, 8, 10].includes(total)) {
+              gameState.players.forEach(p => {
+                const bets = gameState.bets[p.id] || {};
+                const hardKey = `hard${total}`;
+                if (bets[hardKey]) {
+                  const win = getHardwayWin(total, bets[hardKey]);
+                  payouts[p.id] += win;
+                }
+              });
+            } else if ([4, 6, 8, 10].includes(total)) {
+              // Easy way - hardways lose
+              gameState.players.forEach(p => {
+                const bets = gameState.bets[p.id] || {};
+                const hardKey = `hard${total}`;
+                if (bets[hardKey]) {
+                  losses[p.id] += bets[hardKey];
+                }
+              });
+              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, [`hard${total}`]);
+            }
+
+            // Horn bets
+            if ([2, 3, 11, 12].includes(total)) {
+              gameState.players.forEach(p => {
+                const bets = gameState.bets[p.id] || {};
+                if (bets.horn) {
+                  const hornBet = bets.horn / 4;
+                  if (total === 2 || total === 12) {
+                    payouts[p.id] += hornBet * 30;
+                    losses[p.id] += hornBet * 3; // Lost the other 3 parts
+                  } else {
+                    payouts[p.id] += hornBet * 15;
+                    losses[p.id] += hornBet * 3; // Lost the other 3 parts
+                  }
+                }
+              });
+              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['horn']);
+            } else {
+              gameState.players.forEach(p => {
+                const bets = gameState.bets[p.id] || {};
+                if (bets.horn) losses[p.id] += bets.horn;
+              });
+              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['horn']);
+            }
+
+            // C&E
+            if ([2, 3, 12].includes(total)) {
+              gameState.players.forEach(p => {
+                const bets = gameState.bets[p.id] || {};
+                if (bets.ce) {
+                  const half = bets.ce / 2;
+                  payouts[p.id] += half * 7; // Craps pays 7:1
+                  losses[p.id] += half; // E loses
+                }
+              });
+              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['ce']);
+            } else if (total === 11) {
+              gameState.players.forEach(p => {
+                const bets = gameState.bets[p.id] || {};
+                if (bets.ce) {
+                  const half = bets.ce / 2;
+                  payouts[p.id] += half * 15; // Eleven pays 15:1
+                  losses[p.id] += half; // C loses
+                }
+              });
+              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['ce']);
+            } else {
+              gameState.players.forEach(p => {
+                const bets = gameState.bets[p.id] || {};
+                if (bets.ce) losses[p.id] += bets.ce;
+              });
+              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['ce']);
+            }
+
+            // Buy bets
+            if ([4, 5, 6, 8, 9, 10].includes(total) && total !== 7) {
+              gameState.players.forEach(p => {
+                const bets = gameState.bets[p.id] || {};
+                const buyKey = `buy${total}`;
+                if (bets[buyKey]) {
+                  const trueOdds = getBuyWin(total, bets[buyKey]);
+                  payouts[p.id] += trueOdds;
+                }
+              });
+            }
+
+            // Apply payouts
+            const updatedPlayers = gameState.players.map(player => {
+              const netChange = payouts[player.id] - losses[player.id];
+              return {
+                ...player,
+                chips: player.chips + payouts[player.id]
+              };
+            });
+
+            updatedGame.players = updatedPlayers;
+            saveGameState(updatedGame);
+            
+            // Show win/loss for current player
+            const myPayout = payouts[playerId] || 0;
+            const myLoss = losses[playerId] || 0;
+            const netAmount = myPayout - myLoss;
+            
+            if (netAmount > 0) {
+              setWinLossDisplay({ playerId, amount: netAmount, type: 'win' });
+              setTimeout(() => setWinLossDisplay(null), 3000);
+            } else if (netAmount < 0) {
+              setWinLossDisplay({ playerId, amount: Math.abs(netAmount), type: 'loss' });
+              setTimeout(() => setWinLossDisplay(null), 3000);
+            }
+            
+            if (messages.length > 0) {
+              showMessage(messages.join(' • '));
+            }
+          };
+
+          const clearBetsForAllPlayers = (bets, betTypes) => {
+            const newBets = {};
+            Object.keys(bets).forEach(pId => {
+              newBets[pId] = {};
+              Object.keys(bets[pId]).forEach(betType => {
+                if (!betTypes.includes(betType)) {
+                  newBets[pId][betType] = bets[pId][betType];
+                }
+              });
+            });
+            return newBets;
+          };
+
+          const getOddsWin = (point, bet) => {
+            if (point === 4 || point === 10) return bet * 2;
+            if (point === 5 || point === 9) return bet * 1.5;
+            if (point === 6 || point === 8) return bet * 1.2;
+            return 0;
+          };
+
+          const getPlaceWin = (num, bet) => {
+            if (num === 4 || num === 10) return Math.floor(bet * 1.8);
+            if (num === 5 || num === 9) return Math.floor(bet * 1.4);
+            if (num === 6 || num === 8) return Math.floor(bet * 1.166667);
+            return 0;
+          };
+
+          const getBuyWin = (num, bet) => {
+            if (num === 4 || num === 10) return bet * 2;
+            if (num === 5 || num === 9) return bet * 1.5;
+            if (num === 6 || num === 8) return bet * 1.2;
+            return 0;
+          };
+
+          const getHardwayWin = (num, bet) => {
+            if (num === 4 || num === 10) return bet * 7;
+            if (num === 6 || num === 8) return bet * 9;
+            return 0;
+          };
+
+          const showMessage = (msg) => {
+            setMessage(msg);
+            setTimeout(() => setMessage(''), 4000);
+          };
+
+          const addChip = (chipInfo) => {
+            const player = gameState.players.find(p => p.id === playerId);
+            if (player && player.chips >= chipInfo.value) {
+              setSelectedChips([...selectedChips, chipInfo.value]);
+            }
+          };
+
+          const clearChips = () => {
+            setSelectedChips([]);
+          };
+
+          const getTotalChips = () => {
+            return selectedChips.reduce((sum, chip) => sum + chip, 0);
+          };
+
+          const CasinoChip = ({ chipInfo, onClick, disabled }) => (
+            <div 
+              className="casino-chip"
+              style={{ 
+                '--chip-color': chipInfo.color,
+                opacity: disabled ? 0.5 : 1,
+                cursor: disabled ? 'not-allowed' : 'pointer'
+              }}
+              onClick={() => !disabled && onClick(chipInfo)}
+            >
+              <span className="chip-value" style={{ color: chipInfo.textColor }}>
+                ${chipInfo.value}
+              </span>
+            </div>
+          );
+
+          const Dice = ({ value }) => {
+            const dotPositions = {
+              1: [[50, 50]],
+              2: [[25, 25], [75, 75]],
+              3: [[25, 25], [50, 50], [75, 75]],
+              4: [[25, 25], [25, 75], [75, 25], [75, 75]],
+              5: [[25, 25], [25, 75], [50, 50], [75, 25], [75, 75]],
+              6: [[25, 25], [25, 50], [25, 75], [75, 25], [75, 50], [75, 75]]
+            };
+
+            return (
+              <div className="die" style={{ width: 80, height: 80, position: 'relative' }}>
+                {dotPositions[value].map((pos, i) => (
+                  <div 
+                    key={i}
+                    className="die-dot"
+                    style={{ position: 'absolute', left: `${pos[0]}%`, top: `${pos[1]}%`, transform: 'translate(-50%, -50%)' }}
+                  />
+                ))}
+              </div>
+            );
+          };
+
+          const BetBox = ({ betType, label, className = '', style = {} }) => {
+            const allBets = gameState?.bets || {};
+            const total = getTotalChips();
+
+            return (
+              <div
+                onClick={() => total > 0 && placeBet(betType, label)}
+                className={`bet-box ${className}`}
+                style={{...style, minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px'}}
+              >
+                <div style={{ textAlign: 'center', color: '#ffd700', fontWeight: 'bold', fontSize: '14px', textShadow: '1px 1px 2px #000', position: 'relative', zIndex: 1 }}>
+                  {label}
+                </div>
+                
+                <div style={{ position: 'absolute', top: 2, left: 2, right: 2, display: 'flex', flexWrap: 'wrap', gap: '2px', zIndex: 2 }}>
+                  {gameState?.players.map(player => {
+                    const playerBet = allBets[player.id]?.[betType];
+                    if (!playerBet) return null;
+                    
+                    const isMe = player.id === playerId;
+                    return (
+                      <div
+                        key={player.id}
+                        style={{
+                          background: isMe ? '#ffd700' : 'rgba(255,255,255,0.9)',
+                          color: '#000',
+                          padding: '2px 4px',
+                          borderRadius: '3px',
+                          fontSize: '10px',
+                          fontWeight: 'bold',
+                          border: isMe ? '2px solid #ff0000' : 'none'
+                        }}
+                      >
+                        {player.name.substring(0, 6)}: ${playerBet}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          };
+
+          if (!gameState) {
+            return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: 'white', fontSize: '24px' }}>Loading...</div>;
+          }
+
+          const currentPlayer = gameState.players.find(p => p.id === playerId);
+          const isShooter = currentPlayer && gameState.players[gameState.currentShooter]?.id === playerId;
+          const currentShooterName = gameState.players[gameState.currentShooter]?.name || 'Waiting...';
+
+          if (showJoinModal || !currentPlayer) {
+            return (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
+                <div style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', padding: '40px', borderRadius: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', maxWidth: '500px', width: '100%', border: '3px solid #ffd700' }}>
+                  <h1 style={{ color: '#ffd700', fontSize: '36px', fontWeight: 'bold', marginBottom: '10px', textAlign: 'center', textShadow: '2px 2px 4px #000' }}>🎲 VEGAS CRAPS 🎲</h1>
+                  <p style={{ color: '#fff', textAlign: 'center', marginBottom: '30px' }}>Join the table and roll the dice!</p>
+                  
+                  <input
+                    type="text"
+                    placeholder="Enter your name"
+                    value={playerName}
+                    onChange={(e) => setPlayerName(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && joinGame()}
+                    style={{ width: '100%', padding: '15px', border: '3px solid #ffd700', borderRadius: '10px', marginBottom: '20px', fontSize: '18px', background: '#fff' }}
+                    maxLength={15}
+                    autoFocus
+                  />
+                  
+                  <button
+                    onClick={joinGame}
+                    disabled={!playerName.trim() || gameState.players.length >= MAX_PLAYERS}
+                    style={{ width: '100%', background: 'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)', color: '#fff', padding: '15px', borderRadius: '10px', fontSize: '20px', fontWeight: 'bold', border: 'none', cursor: 'pointer', boxShadow: '0 4px 8px rgba(0,0,0,0.3)' }}
+                  >
+                    {gameState.players.length >= MAX_PLAYERS ? 'TABLE FULL (6/6)' : `JOIN TABLE (${gameState.players.length}/6)`}
+                  </button>
+                  
+                  <div style={{ marginTop: '30px', color: '#fff', fontSize: '14px' }}>
+                    <p style={{ fontWeight: 'bold', marginBottom: '10px', color: '#ffd700' }}>Table Rules:</p>
+                    <ul style={{ listStyle: 'none', lineHeight: '1.8' }}>
+                      <li>💰 Starting chips: $250</li>
+                      <li>🎯 Table minimum: $15</li>
+                      <li>🎲 Prop minimum: $1</li>
+                      <li>👥 Max players: 6</li>
+                    </ul>
+                  </div>
+
+                  {gameState.players.length > 0 && (
+                    <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,215,0,0.1)', borderRadius: '10px', border: '1px solid #ffd700' }}>
+                      <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '10px', color: '#ffd700' }}>Players at table:</p>
+                      {gameState.players.map(p => (
+                        <div key={p.id} style={{ color: '#fff', fontSize: '14px', marginBottom: '5px' }}>
+                          🎰 {p.name} (${p.chips})
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div style={{ minHeight: '100vh', padding: '10px', background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)', position: 'relative' }}>
+              
+              {/* WIN/LOSS CENTER DISPLAY */}
+              {winLossDisplay && winLossDisplay.playerId === playerId && (
+                <div 
+                  className="win-loss-display"
+                  style={{
+                    position: 'fixed',
+                    top: '50%',
+                    left: '50%',
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: 9999,
+                    background: winLossDisplay.type === 'win' 
+                      ? 'linear-gradient(135deg, #00ff00 0%, #00aa00 100%)' 
+                      : 'linear-gradient(135deg, #ff0000 0%, #aa0000 100%)',
+                    color: '#fff',
+                    padding: '40px 60px',
+                    borderRadius: '20px',
+                    fontSize: '48px',
+                    fontWeight: 'bold',
+                    textAlign: 'center',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.8)',
+                    border: '5px solid #ffd700',
+                    textShadow: '3px 3px 6px rgba(0,0,0,0.5)'
+                  }}
+                >
+                  {winLossDisplay.type === 'win' ? '+ $' : '- $'}{winLossDisplay.amount}
+                  <div style={{ fontSize: '24px', marginTop: '10px' }}>
+                    {winLossDisplay.type === 'win' ? '🎉 WINNER! 🎉' : '💔 LOST 💔'}
+                  </div>
+                </div>
+              )}
+
+              {/* DEALER CALL */}
+              {dealerCall && (
+                <div style={{
+                  position: 'fixed',
+                  top: '20px',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  zIndex: 1000,
+                  background: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',
+                  color: '#ffd700',
+                  padding: '20px 40px',
+                  borderRadius: '15px',
+                  fontSize: '32px',
+                  fontWeight: 'bold',
+                  textAlign: 'center',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
+                  border: '3px solid #ffd700',
+                  textShadow: '2px 2px 4px #000'
+                }}>
+                  {dealerCall}
+                </div>
+              )}
+
+              {/* Header */}
+              <div style={{ background: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)', color: '#ffd700', padding: '15px', borderRadius: '10px', marginBottom: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '2px solid #ffd700' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', textShadow: '2px 2px 4px #000' }}>🎲 VEGAS CRAPS TABLE</h1>
+                    <div style={{ fontSize: '12px', color: '#fff' }}>Min: $15 • Prop: $1</div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#fff' }}>{currentPlayer.name}</div>
+                    <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#00ff00' }}>${currentPlayer.chips}</div>
+                    {currentPlayer.chips < TABLE_MIN && (
+                      <button onClick={rebuy} style={{ marginTop: '5px', background: '#ffd700', color: '#000', padding: '5px 10px', borderRadius: '5px', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}>
+                        Rebuy +$250
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Bar with Puck */}
+              <div style={{ background: '#000', color: '#fff', padding: '15px', borderRadius: '10px', marginBottom: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '3px solid #ffd700' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', fontSize: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div className={`puck ${gameState.phase === 'comeout' ? 'off' : 'on'}`}>
+                      {gameState.phase === 'comeout' ? 'OFF' : 'ON'}
+                    </div>
+                    <div style={{ fontWeight: 'bold' }}>
+                      {gameState.phase === 'comeout' ? (
+                        <span style={{ color: '#00ff00' }}>COME OUT ROLL</span>
+                      ) : (
+                        <span style={{ color: '#fff' }}>POINT IS <span style={{ color: '#ffd700', fontSize: '24px' }}>{gameState.point}</span></span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <span style={{ fontWeight: 'bold', color: '#ffd700' }}>Shooter:</span> {currentShooterName}
+                    {isShooter && <span style={{ marginLeft: '10px', color: '#ff0000' }}>🎲 (YOU)</span>}
+                  </div>
+                  {gameState.lastTotal && (
+                    <div style={{ fontWeight: 'bold', color: '#ffd700' }}>Last: {gameState.lastTotal}</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Message */}
+              {message && (
+                <div style={{ background: 'linear-gradient(135deg, #0066ff 0%, #0044cc 100%)', color: '#fff', padding: '15px', borderRadius: '10px', marginBottom: '10px', textAlign: 'center', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(0,102,255,0.5)' }}>
+                  {message}
+                </div>
+              )}
+
+              {/* CRAPS TABLE */}
+              <div className="felt-green" style={{ borderRadius: '15px', padding: '20px', border: '8px solid #8b4513', boxShadow: '0 8px 24px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.3)', marginBottom: '10px' }}>
+                
+                {/* Pass Line at Top */}
+                <div style={{ marginBottom: '15px' }}>
+                  <BetBox betType="pass" label="PASS LINE" style={{ height: '60px', fontSize: '20px', background: 'rgba(255,255,255,0.1)' }} />
+                </div>
+
+                {/* Main betting grid - THE NUMBERS */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '15px' }}>
+                  {[4, 5, 6, 8, 9, 10].map(num => (
+                    <div key={num} style={{ position: 'relative' }}>
+                      <BetBox 
+                        betType={`place${num}`} 
+                        label={num === 6 ? 'six' : num === 9 ? 'Nine' : num.toString()} 
+                        style={{ 
+                          height: '100px',
+                          fontSize: num === 6 || num === 9 ? '28px' : '40px',
+                          fontWeight: 'bold',
+                          background: gameState.point === num ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.1)',
+                          border: gameState.point === num ? '4px solid #fff' : '2px solid #ffd700',
+                          fontStyle: num === 6 || num === 9 ? 'italic' : 'normal'
+                        }} 
+                      />
+                      {gameState.point === num && (
+                        <div className="puck on" style={{ 
+                          position: 'absolute', 
+                          top: '-10px', 
+                          right: '-10px'
+                        }}>
+                          ON
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Field */}
+                <div style={{ marginBottom: '15px' }}>
+                  <BetBox betType="field" label="FIELD • 2-3-4-9-10-11-12 • Pay Double 2&12" style={{ height: '50px', fontSize: '14px', background: 'rgba(255,255,255,0.1)', color: '#ff0000' }} />
+                </div>
+
+                {/* Don't Pass Bar */}
+                <div style={{ marginBottom: '15px' }}>
+                  <BetBox betType="dontpass" label="DON'T PASS BAR 🎲🎲" style={{ height: '50px', fontSize: '18px', background: 'rgba(255,255,255,0.1)' }} />
+                </div>
+
+                {/* Come/Don't Come */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '15px' }}>
+                  <BetBox betType="come" label="COME" style={{ height: '60px', fontSize: '24px', color: '#ff0000', background: 'rgba(255,255,255,0.1)' }} />
+                  <BetBox betType="dontcome" label="DON'T COME" style={{ height: '60px', fontSize: '18px', background: 'rgba(255,255,255,0.1)' }} />
+                </div>
+
+                {/* CENTER SECTION - Hardways */}
+                <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', marginBottom: '15px' }}>
+                  <div style={{ color: '#ffd700', fontSize: '14px', fontWeight: 'bold', textAlign: 'center', marginBottom: '8px', textShadow: '1px 1px 2px #000' }}>HARDWAYS</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                    {[4, 6, 8, 10].map(num => (
+                      <BetBox
+                        key={num}
+                        betType={`hard${num}`}
+                        label={`🎲🎲\nHard ${num}\n${num === 4 || num === 10 ? '7 TO 1' : '9 TO 1'}`}
+                        style={{ height: '70px', fontSize: '11px', background: 'rgba(255,200,0,0.2)', whiteSpace: 'pre-line' }}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Prop Bets */}
+                <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', marginBottom: '15px' }}>
+                  <div style={{ color: '#ffd700', fontSize: '14px', fontWeight: 'bold', textAlign: 'center', marginBottom: '8px', textShadow: '1px 1px 2px #000' }}>ONE ROLL BETS</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <BetBox betType="horn" label="HORN\n30 TO 1 / 15 TO 1" style={{ height: '60px', fontSize: '12px', background: 'rgba(255,100,100,0.3)', whiteSpace: 'pre-line' }} />
+                    <BetBox betType="ce" label="C & E" style={{ height: '60px', fontSize: '18px', background: 'rgba(255,100,100,0.3)' }} />
+                  </div>
+                </div>
+
+                {/* Buy Bets */}
+                <div style={{ background: 'rgba(0,0,0,0.3)', padding: '10px', borderRadius: '10px', marginBottom: '15px' }}>
+                  <div style={{ color: '#ffd700', fontSize: '12px', fontWeight: 'bold', textAlign: 'center', marginBottom: '8px', textShadow: '1px 1px 2px #000' }}>BUY BETS (True Odds)</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '4px' }}>
+                    {[4, 5, 6, 8, 9, 10].map(num => (
+                      <BetBox key={num} betType={`buy${num}`} label={`BUY\n${num}`} style={{ height: '50px', fontSize: '11px', background: 'rgba(100,150,255,0.3)', whiteSpace: 'pre-line' }} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* Odds Bets (only when point established) */}
+                {gameState.point && (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <BetBox betType="passodds" label="ODDS ON PASS" style={{ height: '50px', background: 'rgba(0,255,0,0.2)', fontSize: '14px' }} />
+                    <BetBox betType="dontpassodds" label="ODDS ON DON'T PASS" style={{ height: '50px', background: 'rgba(0,255,0,0.2)', fontSize: '12px' }} />
+                  </div>
+                )}
+              </div>
+
+              {/* Chip Selection */}
+              <div style={{ background: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)', padding: '15px', borderRadius: '10px', marginBottom: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '2px solid #ffd700' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <div style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '18px' }}>
+                    Selected: ${getTotalChips()}
+                  </div>
+                  <button
+                    onClick={clearChips}
+                    style={{ background: '#ff0000', color: '#fff', padding: '10px 20px', borderRadius: '8px', border: 'none', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 4px 8px rgba(0,0,0,0.3)' }}
+                  >
+                    Clear
+                  </button>
+                </div>
+                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {CHIP_VALUES.map(chipInfo => (
+                    <CasinoChip 
+                      key={chipInfo.value}
+                      chipInfo={chipInfo}
+                      onClick={addChip}
+                      disabled={currentPlayer.chips < chipInfo.value}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Dice and Roll */}
+              <div style={{ background: '#fff', padding: '20px', borderRadius: '10px', marginBottom: '10px', boxShadow: '0 8px 16px rgba(0,0,0,0.4)' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '20px' }}>
+                  <Dice value={diceValues.die1} />
+                  <Dice value={diceValues.die2} />
+                </div>
+                
+                {isShooter ? (
+                  <button
+                    onClick={rollDice}
+                    disabled={isRolling}
+                    style={{ 
+                      width: '100%', 
+                      background: isRolling ? '#666' : 'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)', 
+                      color: '#fff', 
+                      padding: '20px', 
+                      borderRadius: '10px', 
+                      fontSize: '24px', 
+                      fontWeight: 'bold', 
+                      border: 'none', 
+                      cursor: isRolling ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 6px 12px rgba(0,0,0,0.4)'
+                    }}
+                  >
+                    {isRolling ? '🎲 ROLLING...' : '🎲 ROLL DICE'}
+                  </button>
+                ) : (
+                  <div style={{ textAlign: 'center', color: '#666', padding: '20px', fontWeight: 'bold', fontSize: '18px' }}>
+                    Waiting for {currentShooterName} to roll...
+                  </div>
+                )}
+              </div>
+
+              {/* Players */}
+              <div style={{ background: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)', color: '#fff', padding: '15px', borderRadius: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '2px solid #ffd700' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: '#ffd700' }}>Players ({gameState.players.length}/6)</h3>
+                  <button 
+                    onClick={() => {
+                      if (window.confirm('Reset table? All players and bets will be cleared.')) {
+                        const newGame = initializeGame();
+                        saveGameState(newGame);
+                        localStorage.removeItem('craps-player-id');
+                        setPlayerId(null);
+                        setShowJoinModal(true);
+                      }
+                    }}
+                    style={{ background: '#666', color: '#fff', padding: '8px 15px', borderRadius: '5px', border: 'none', fontSize: '12px', cursor: 'pointer' }}
+                  >
+                    Reset
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {gameState.players.map((player, idx) => (
+                    <div
+                      key={player.id}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '12px',
+                        borderRadius: '8px',
+                        background: player.id === playerId ? 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)' : '#333',
+                        color: player.id === playerId ? '#000' : '#fff',
+                        fontWeight: 'bold',
+                        border: idx === gameState.currentShooter ? '3px solid #ff0000' : 'none'
+                      }}
+                    >
+                      <span>
+                        {idx === gameState.currentShooter && '🎲 '}
+                        {player.name}
+                        {player.id === playerId && ' (YOU)'}
+                      </span>
+                      <span style={{ fontSize: '18px', color: player.id === playerId ? '#00aa00' : '#00ff00' }}>${player.chips}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        };
+
+        ReactDOM.render(<CrapsGame />, document.getElementById('root'));
+    </script>
+</body>
+</html>
