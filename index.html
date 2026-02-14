@@ -3,581 +3,372 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vegas Craps Table - Online Multiplayer</title>
+    <title>The Ivory Room — Private Craps</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
+        :root {
+            --bg-deep: #0c0c0e;
+            --bg-card: #161619;
+            --bg-card-hover: #1c1c20;
+            --bg-elevated: #1e1e22;
+            --felt: #1a4a2e;
+            --felt-light: #1f5a36;
+            --felt-dark: #143d24;
+            --rail: #3d2215;
+            --rail-light: #5a3a28;
+            --rail-edge: #2a1810;
+            --brass: #c9a84c;
+            --brass-dim: #8a7235;
+            --brass-glow: #d4b85a;
+            --ivory: #f0ece4;
+            --ivory-dim: #a8a49c;
+            --ivory-muted: #787470;
+            --red-accent: #c0392b;
+            --red-deep: #8b1a1a;
+            --green-win: #2ecc71;
+            --green-dim: #1a7a42;
+            --loss-red: #e74c3c;
+            --chip-white: #e8e4dc;
+            --chip-red: #b83232;
+            --chip-blue: #2a5fa8;
+            --chip-green: #2a8a4a;
+            --chip-orange: #c47a2a;
+            --font-display: 'Cormorant Garamond', Georgia, serif;
+            --font-body: 'DM Sans', system-ui, sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.4);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
+            --shadow-glow: 0 0 20px rgba(201,168,76,0.15);
+        }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { 
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
-            overflow-x: hidden;
+        body { font-family: var(--font-body); background: var(--bg-deep); color: var(--ivory); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
+
+        /* Noise texture overlay */
+        body::before {
+            content: ''; position: fixed; inset: 0; z-index: 9999; pointer-events: none;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
         }
+
+        /* Casino Chip */
         .casino-chip {
-            width: 50px; height: 50px; border-radius: 50%; position: relative;
+            width: 52px; height: 52px; border-radius: 50%; position: relative;
             display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 13px; cursor: pointer;
-            transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            font-weight: 700; font-size: 12px; cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+            font-family: var(--font-mono);
         }
-        .casino-chip.small { width: 35px; height: 35px; font-size: 11px; }
-        .casino-chip:hover { transform: scale(1.1); }
-        .casino-chip:active { transform: scale(0.95); }
-        .casino-chip.dragging { opacity: 0.5; cursor: grabbing !important; }
+        .casino-chip.small { width: 32px; height: 32px; font-size: 9px; }
+        .casino-chip:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1); }
+        .casino-chip:active { transform: translateY(0) scale(0.95); }
+        .casino-chip.dragging { opacity: 0.4; cursor: grabbing !important; }
         .casino-chip::before {
             content: ''; position: absolute; inset: 0; border-radius: 50%; padding: 3px;
-            background: repeating-conic-gradient(from 0deg, var(--chip-color) 0deg 18deg, white 18deg 36deg);
+            background: repeating-conic-gradient(from 0deg, var(--chip-color) 0deg 20deg, rgba(255,255,255,0.7) 20deg 40deg);
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor; mask-composite: exclude;
+            -webkit-mask-composite: xor; mask-composite: exclude; opacity: 0.6;
         }
         .casino-chip::after {
-            content: ''; position: absolute; inset: 6px; border-radius: 50%;
-            background: white; border: 2px solid var(--chip-color);
+            content: ''; position: absolute; inset: 5px; border-radius: 50%;
+            background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.15), transparent 60%);
+            border: 1.5px solid var(--chip-color);
         }
-        .casino-chip.small::after { inset: 4px; border: 1px solid var(--chip-color); }
-        .chip-value { position: relative; z-index: 1; color: #000; font-weight: 900; text-shadow: 0 1px 2px rgba(255,255,255,0.5); }
-        .chip-selected { box-shadow: 0 0 0 4px #ffd700, 0 4px 8px rgba(0,0,0,0.4); transform: scale(1.15); }
-        .felt-green { background: linear-gradient(135deg, #0d5c0d 0%, #1a8b1a 50%, #0d5c0d 100%); }
-        .bet-box {
-            border: 2px solid #ffd700; background: rgba(255, 255, 255, 0.05);
-            position: relative; cursor: pointer; transition: all 0.2s; padding: 4px;
+        .casino-chip.small::after { inset: 3px; border-width: 1px; }
+        .chip-value { position: relative; z-index: 1; color: var(--ivory); font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,0.8); letter-spacing: -0.5px; }
+        .chip-selected { box-shadow: 0 0 0 3px var(--brass), 0 0 24px rgba(201,168,76,0.3); transform: translateY(-4px); }
+
+        /* Felt */
+        .felt-surface {
+            background:
+                radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.04) 0%, transparent 60%),
+                linear-gradient(180deg, var(--felt-light) 0%, var(--felt) 40%, var(--felt-dark) 100%);
+            position: relative;
         }
-        .bet-box:hover { background: rgba(255, 255, 255, 0.15); border-color: #fff; }
-        .bet-box.off { opacity: 0.5; border-color: #666; }
+        .felt-surface::before {
+            content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+            opacity: 0.08;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 128 128' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='felt'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23felt)'/%3E%3C/svg%3E");
+        }
+
+        /* Bet boxes */
+        .bet-area {
+            border: 1.5px solid rgba(201,168,76,0.25); background: rgba(0,0,0,0.15);
+            position: relative; cursor: pointer; transition: all 0.2s ease;
+            border-radius: 6px; backdrop-filter: blur(2px);
+        }
+        .bet-area:hover { background: rgba(201,168,76,0.08); border-color: rgba(201,168,76,0.5); }
+        .bet-area.off { opacity: 0.35; border-color: rgba(255,255,255,0.08); }
+        .bet-area.off:hover { opacity: 0.5; }
+
+        /* Drop zone */
         .drop-zone {
-            border: 3px dashed #ffd700; background: rgba(255, 215, 0, 0.1);
-            border-radius: 10px; padding: 20px; text-align: center; transition: all 0.3s;
+            border: 2px dashed rgba(201,168,76,0.3); background: rgba(201,168,76,0.03);
+            border-radius: 12px; padding: 20px; text-align: center; transition: all 0.3s;
         }
-        .drop-zone.drag-over { background: rgba(255, 215, 0, 0.3); border-color: #fff; transform: scale(1.02); }
-        .die {
-            background: linear-gradient(145deg, #ffffff, #f0f0f0);
-            box-shadow: 0 0 0 2px #000, 2px 2px 4px rgba(0,0,0,0.3), inset -2px -2px 4px rgba(0,0,0,0.1);
-            border-radius: 8px;
+        .drop-zone.drag-over { background: rgba(201,168,76,0.1); border-color: var(--brass); }
+
+        /* Dice */
+        .die-face {
+            background: linear-gradient(145deg, #faf8f4, #e8e4dc);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8);
+            border-radius: 10px; border: 1px solid rgba(0,0,0,0.08);
         }
-        .die-dot { width: 10px; height: 10px; background: #000; border-radius: 50%; }
-        @keyframes winPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(-50px) scale(0.5); } to { opacity: 1; transform: translateY(0) scale(1); } }
-        .win-loss-display { animation: slideIn 0.3s ease-out, winPulse 0.6s ease-in-out; }
-        .puck {
-            width: 45px; height: 45px; border-radius: 50%; border: 4px solid #000;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; font-size: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+        .die-pip { width: 9px; height: 9px; background: #1a1a1a; border-radius: 50%; box-shadow: inset 0 1px 2px rgba(0,0,0,0.3); }
+
+        /* Animations */
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes resultReveal { 
+            0% { opacity: 0; transform: translate(-50%,-50%) scale(0.8); backdrop-filter: blur(0); }
+            100% { opacity: 1; transform: translate(-50%,-50%) scale(1); backdrop-filter: blur(12px); }
         }
-        .puck.on { background: white; color: black; }
-        .puck.off { background: black; color: white; }
-        .craps-table-container { max-width: 1400px; margin: 0 auto; }
-        .chip-rack {
-            background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
-            border: 3px solid #8b4513; border-radius: 10px; padding: 15px;
-            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+        @keyframes dealerSlide {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
         }
-        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-        .online-dot { width: 10px; height: 10px; border-radius: 50%; background: #00ff00; display: inline-block; animation: pulse-dot 2s infinite; margin-right: 6px; }
-        .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; color: white; gap: 20px; }
-        .loading-spinner { width: 50px; height: 50px; border: 4px solid rgba(255,215,0,0.3); border-top: 4px solid #ffd700; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes pulse-soft { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        .result-overlay { animation: resultReveal 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .dealer-banner { animation: dealerSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* Puck */
+        .puck-marker {
+            width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 700; font-size: 10px; font-family: var(--font-mono); letter-spacing: 1px;
+            box-shadow: var(--shadow-md); text-transform: uppercase;
+        }
+        .puck-marker.on { background: var(--ivory); color: var(--bg-deep); }
+        .puck-marker.off { background: var(--bg-deep); color: var(--ivory-dim); border: 2px solid rgba(255,255,255,0.15); }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.2); border-radius: 3px; }
+
+        /* Button base */
+        .btn { border: none; cursor: pointer; font-family: var(--font-body); font-weight: 600; transition: all 0.2s ease; }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
     </style>
 </head>
 <body>
     <div id="root"></div>
     <script type="text/babel">
-        const { useState, useEffect, useRef, useCallback } = React;
-
-        const TABLE_KEY = 'craps-table-v2';
+        const { useState, useEffect, useRef } = React;
+        const STORAGE_KEY = 'craps-game-' + (window.location.hash.slice(1) || 'default');
 
         const CrapsGame = () => {
           const [gameState, setGameState] = useState(null);
-          const [playerId, setPlayerId] = useState(null);
+          const [playerId, setPlayerId] = useState(localStorage.getItem('craps-player-id'));
           const [playerName, setPlayerName] = useState('');
           const [selectedDenomination, setSelectedDenomination] = useState(null);
           const [isRolling, setIsRolling] = useState(false);
           const [diceValues, setDiceValues] = useState({ die1: 1, die2: 1 });
-          const [showJoinModal, setShowJoinModal] = useState(true);
+          const [showJoinModal, setShowJoinModal] = useState(!playerId);
           const [message, setMessage] = useState('');
           const [dealerCall, setDealerCall] = useState('');
           const [winLossDisplay, setWinLossDisplay] = useState(null);
           const [isDraggingChip, setIsDraggingChip] = useState(false);
           const [draggedBetType, setDraggedBetType] = useState(null);
-          const [isLoading, setIsLoading] = useState(true);
-          const [connectionStatus, setConnectionStatus] = useState('connecting');
-          const [lastRollId, setLastRollId] = useState(null);
-          const rollLockRef = useRef(false);
-          const playerIdRef = useRef(null);
 
           const CHIP_VALUES = [
-            { value: 1, color: '#ffffff', name: 'White' },
-            { value: 5, color: '#ff0000', name: 'Red' },
-            { value: 10, color: '#0066cc', name: 'Blue' },
-            { value: 25, color: '#00aa00', name: 'Green' },
-            { value: 50, color: '#ff6600', name: 'Orange' }
+            { value: 1, color: 'var(--chip-white)', name: 'Ivory' },
+            { value: 5, color: 'var(--chip-red)', name: 'Crimson' },
+            { value: 10, color: 'var(--chip-blue)', name: 'Sapphire' },
+            { value: 25, color: 'var(--chip-green)', name: 'Emerald' },
+            { value: 50, color: 'var(--chip-orange)', name: 'Amber' }
           ];
           const TABLE_MIN = 15, PROP_MIN = 1, STARTING_CHIPS = 250, MAX_PLAYERS = 6;
 
-          // === SHARED STORAGE LAYER ===
-          const loadFromServer = async () => {
+          useEffect(() => { const iv = setInterval(loadGameState, 1000); loadGameState(); return () => clearInterval(iv); }, []);
+
+          const loadGameState = () => {
             try {
-              const result = await window.storage.get(TABLE_KEY, true);
-              if (result && result.value) {
-                const state = JSON.parse(result.value);
-                setGameState(state);
-                setConnectionStatus('connected');
-                if (state.lastDice) setDiceValues(state.lastDice);
-                if (state.lastDealerCall) setDealerCall(state.lastDealerCall);
-                // Detect new rolls from other players
-                if (state.rollId && state.rollId !== lastRollId) {
-                  setLastRollId(state.rollId);
-                  if (state.lastRollResult && playerIdRef.current && state.lastRollShooter !== playerIdRef.current) {
-                    const myNet = (state.lastRollResult.payouts?.[playerIdRef.current] || 0) - (state.lastRollResult.losses?.[playerIdRef.current] || 0);
-                    if (myNet > 0) { setWinLossDisplay({ playerId: playerIdRef.current, amount: myNet, type: 'win' }); setTimeout(() => setWinLossDisplay(null), 3000); }
-                    else if (myNet < 0) { setWinLossDisplay({ playerId: playerIdRef.current, amount: Math.abs(myNet), type: 'loss' }); setTimeout(() => setWinLossDisplay(null), 3000); }
-                    if (state.lastRollMessage) setMessage(state.lastRollMessage);
-                  }
-                }
-                return state;
-              }
-              return null;
-            } catch (e) {
-              console.error('Load error:', e);
-              setConnectionStatus('error');
-              return null;
-            }
+              const s = localStorage.getItem(STORAGE_KEY);
+              if (s) { const st = JSON.parse(s); setGameState(st); if (st.lastDice) setDiceValues(st.lastDice); if (st.lastDealerCall) setDealerCall(st.lastDealerCall); }
+              else { const ng = initializeGame(); localStorage.setItem(STORAGE_KEY, JSON.stringify(ng)); setGameState(ng); }
+            } catch (e) { console.error(e); }
           };
 
-          const saveToServer = async (newState) => {
-            try {
-              const result = await window.storage.set(TABLE_KEY, JSON.stringify(newState), true);
-              if (result) { setGameState(newState); setConnectionStatus('connected'); return true; }
-              setConnectionStatus('error');
-              return false;
-            } catch (e) {
-              console.error('Save error:', e);
-              setConnectionStatus('error');
-              return false;
-            }
-          };
+          const initializeGame = () => ({ players: [], playerOrder: [], currentShooter: 0, point: null, phase: 'comeout', lastDice: null, lastTotal: null, lastDealerCall: '', bets: {}, comeBets: {}, dontComeBets: {}, gameId: Date.now() });
 
-          const getFreshState = async () => {
-            const state = await loadFromServer();
-            return state || gameState;
-          };
+          const saveGameState = (s) => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); setGameState(s); } catch (e) { console.error(e); } };
 
-          // Init: load or create table
-          useEffect(() => {
-            const init = async () => {
-              setIsLoading(true);
-              try {
-                let state = await loadFromServer();
-                if (!state) {
-                  const newGame = initializeGame();
-                  await saveToServer(newGame);
-                  state = newGame;
-                }
-                setGameState(state);
-                // Check if player already exists
-                const storedPid = sessionStorage.getItem('craps-player-id');
-                if (storedPid && state.players.find(p => p.id === storedPid)) {
-                  setPlayerId(storedPid);
-                  playerIdRef.current = storedPid;
-                  setShowJoinModal(false);
-                }
-              } catch (e) {
-                console.error('Init error:', e);
-                const newGame = initializeGame();
-                setGameState(newGame);
-              }
-              setIsLoading(false);
-            };
-            init();
-          }, []);
-
-          // Poll for updates
-          useEffect(() => {
-            const interval = setInterval(() => {
-              if (!rollLockRef.current) loadFromServer();
-            }, 1500);
-            return () => clearInterval(interval);
-          }, [lastRollId]);
-
-          // Heartbeat: keep player alive
-          useEffect(() => {
-            if (!playerId) return;
-            const heartbeat = setInterval(async () => {
-              const fs = await getFreshState();
-              if (!fs) return;
-              const now = Date.now();
-              const updatedPlayers = fs.players.map(p => p.id === playerId ? { ...p, lastSeen: now } : p);
-              // Remove players not seen in 5 minutes
-              const activePlayers = updatedPlayers.filter(p => (now - (p.lastSeen || p.joinedAt)) < 300000);
-              const removedIds = updatedPlayers.filter(p => !activePlayers.find(a => a.id === p.id)).map(p => p.id);
-              if (removedIds.length > 0 || updatedPlayers.length !== fs.players.length) {
-                const activeOrder = (fs.playerOrder || []).filter(pid => activePlayers.find(p => p.id === pid));
-                const newBets = { ...fs.bets };
-                const newCB = { ...(fs.comeBets || {}) };
-                const newDCB = { ...(fs.dontComeBets || {}) };
-                removedIds.forEach(rid => { delete newBets[rid]; delete newCB[rid]; delete newDCB[rid]; });
-                await saveToServer({ ...fs, players: activePlayers, playerOrder: activeOrder, bets: newBets, comeBets: newCB, dontComeBets: newDCB,
-                  currentShooter: fs.currentShooter >= activeOrder.length ? 0 : fs.currentShooter });
-              } else {
-                await saveToServer({ ...fs, players: updatedPlayers });
-              }
-            }, 30000);
-            return () => clearInterval(heartbeat);
-          }, [playerId]);
-
-          const initializeGame = () => ({
-            players: [], playerOrder: [], currentShooter: 0, point: null,
-            phase: 'comeout', lastDice: null, lastTotal: null, lastDealerCall: '',
-            bets: {}, comeBets: {}, dontComeBets: {}, gameId: Date.now(),
-            rollId: null, lastRollResult: null, lastRollMessage: '', lastRollShooter: null
-          });
+          const getFreshState = () => { try { const s = localStorage.getItem(STORAGE_KEY); return s ? JSON.parse(s) : gameState; } catch (e) { return gameState; } };
 
           const getDealerCall = (total, phase, point, die1, die2) => {
             const isHard = die1 === die2;
             const calls = {
-              2: ["Snake eyes!", "Craps, two!", "Aces!"],
-              3: ["Craps, three!", "Ace deuce!", "Craps!"],
-              4: isHard ? ["Hard four!", "Little Joe from Kokomo!"] : ["Easy four!", "Four, easy!"],
-              5: ["Five, no field!", "Fever five!"],
-              6: isHard ? ["Hard six!", "Six the hard way!"] : ["Easy six!", "Six, no field!"],
-              7: phase === 'comeout' ? ["Seven, winner seven!", "Front line winner!", "Pay the line!"] : ["Seven out, line away!", "Seven out!", "Take the don'ts!"],
-              8: isHard ? ["Hard eight!", "Eight the hard way!"] : ["Easy eight!", "Eight, no field!"],
-              9: ["Nine, center field!", "Nina!"],
-              10: isHard ? ["Hard ten!", "Big Dick!"] : ["Easy ten!", "Ten, easy!"],
-              11: ["Yo-leven!", "Yo!", "Eleven, front line winner!"],
-              12: ["Boxcars!", "Craps, twelve!", "Midnight!"]
+              2: ["Snake eyes", "Aces"], 3: ["Ace deuce", "Craps, three"],
+              4: isHard ? ["Hard four", "Little Joe"] : ["Easy four"],
+              5: ["Fever five", "No field five"], 6: isHard ? ["Hard six"] : ["Easy six"],
+              7: phase === 'comeout' ? ["Winner seven", "Front line winner"] : ["Seven out", "Line away"],
+              8: isHard ? ["Hard eight"] : ["Easy eight"], 9: ["Center field", "Nina"],
+              10: isHard ? ["Hard ten"] : ["Easy ten"], 11: ["Yo-eleven", "Yo"],
+              12: ["Boxcars", "Midnight"]
             };
-            const options = calls[total] || [total + '!'];
-            return options[Math.floor(Math.random() * options.length)];
+            const o = calls[total] || [total+'']; return o[Math.floor(Math.random()*o.length)];
           };
 
-          const joinGame = async () => {
-            if (!playerName.trim()) { showMessage('Please enter a name'); return; }
-            const fs = await getFreshState();
-            if (!fs) { showMessage('Connection error, try again'); return; }
-            if (fs.players.length >= MAX_PLAYERS) { showMessage('Table is full (6 players max)'); return; }
-            const newPlayerId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            const newPlayer = { id: newPlayerId, name: playerName.trim(), chips: STARTING_CHIPS, joinedAt: Date.now(), lastSeen: Date.now() };
-            const updatedGame = {
-              ...fs, players: [...fs.players, newPlayer],
-              playerOrder: [...(fs.playerOrder || []), newPlayerId],
-              bets: { ...fs.bets, [newPlayerId]: {} },
-              comeBets: { ...(fs.comeBets || {}), [newPlayerId]: [] },
-              dontComeBets: { ...(fs.dontComeBets || {}), [newPlayerId]: [] }
-            };
-            const saved = await saveToServer(updatedGame);
-            if (saved) {
-              setPlayerId(newPlayerId);
-              playerIdRef.current = newPlayerId;
-              sessionStorage.setItem('craps-player-id', newPlayerId);
-              setShowJoinModal(false);
-              showMessage('Welcome to the table, ' + playerName + '!');
-            } else { showMessage('Failed to join, try again'); }
+          const joinGame = () => {
+            if (!playerName.trim()) { showMessage('Enter your name'); return; }
+            const cg = gameState || initializeGame();
+            if (cg.players.length >= MAX_PLAYERS) { showMessage('Table is full'); return; }
+            const npid = 'p_'+Date.now()+'_'+Math.random().toString(36).substr(2,6);
+            const np = { id: npid, name: playerName.trim(), chips: STARTING_CHIPS, joinedAt: Date.now() };
+            const ug = { ...cg, players: [...cg.players, np], playerOrder: [...(cg.playerOrder||[]), npid],
+              bets: { ...cg.bets, [npid]: {} }, comeBets: { ...(cg.comeBets||{}), [npid]: [] }, dontComeBets: { ...(cg.dontComeBets||{}), [npid]: [] } };
+            saveGameState(ug); setPlayerId(npid); localStorage.setItem('craps-player-id', npid);
+            setShowJoinModal(false); showMessage('Welcome, ' + playerName);
           };
 
-          const rebuy = async () => {
-            const fs = await getFreshState();
-            if (!fs) return;
-            const up = fs.players.map(p => p.id === playerId ? { ...p, chips: p.chips + STARTING_CHIPS } : p);
-            await saveToServer({ ...fs, players: up });
-            showMessage('Added $' + STARTING_CHIPS + ' to your stack');
+          const rebuy = () => { const p = gameState.players.find(p=>p.id===playerId); if(!p) return;
+            const up = gameState.players.map(p=>p.id===playerId?{...p,chips:p.chips+STARTING_CHIPS}:p);
+            saveGameState({...gameState,players:up}); showMessage('Rebuy: +$'+STARTING_CHIPS); };
+
+          const getMaxOdds = (pt, bet) => { if(pt===4||pt===10)return bet*3; if(pt===5||pt===9)return bet*4; if(pt===6||pt===8)return bet*5; return 0; };
+
+          const placeBet = (betType, betLabel, amount) => {
+            if (!selectedDenomination && !amount) { showMessage('Select a denomination'); return; }
+            const ba = amount || selectedDenomination; const fs = getFreshState();
+            const player = fs.players.find(p=>p.id===playerId); if(!player) return;
+            if (player.chips < ba) { showMessage('Insufficient chips'); return; }
+            if (betType==='passodds'&&fs.point) { const plb=fs.bets[playerId]?.pass||0; if(!plb){showMessage('Place a Pass bet first');return;} const co=fs.bets[playerId]?.passodds||0,mo=getMaxOdds(fs.point,plb); if(co+ba>mo){showMessage('Max odds: $'+mo);return;} }
+            if (betType==='dontpassodds'&&fs.point) { const dpb=fs.bets[playerId]?.dontpass||0; if(!dpb){showMessage("Place a Don't Pass first");return;} const co=fs.bets[playerId]?.dontpassodds||0,mo=getMaxOdds(fs.point,dpb); if(co+ba>mo){showMessage('Max odds: $'+mo);return;} }
+            if (['pass','dontpass'].includes(betType)&&ba<TABLE_MIN) { showMessage('Table minimum: $'+TABLE_MIN); return; }
+            if (['come','dontcome'].includes(betType)&&ba<TABLE_MIN) { showMessage('Table minimum: $'+TABLE_MIN); return; }
+            if (ba<PROP_MIN) { showMessage('Minimum: $'+PROP_MIN); return; }
+            if (fs.phase==='point'&&['pass','dontpass'].includes(betType)) { if(!(fs.bets[playerId]||{})[betType]){showMessage('Pass/DP only on come out');return;} }
+            if (['come','dontcome'].includes(betType)&&fs.phase!=='point') { showMessage('Come bets during point only'); return; }
+            const up=fs.players.map(p=>p.id===playerId?{...p,chips:p.chips-ba}:p);
+            const cb=fs.bets[playerId]||{};
+            saveGameState({...fs,players:up,bets:{...fs.bets,[playerId]:{...cb,[betType]:(cb[betType]||0)+ba}}});
+            showMessage('$'+ba+' on '+betLabel);
           };
 
-          const getMaxOdds = (point, bet) => {
-            if (point === 4 || point === 10) return bet * 3;
-            if (point === 5 || point === 9) return bet * 4;
-            if (point === 6 || point === 8) return bet * 5;
-            return 0;
-          };
+          const removeBet = (betType) => { const fs=getFreshState(); if(['pass','dontpass'].includes(betType)&&fs.phase==='point'){showMessage("Contract bet");return;} const cb=fs.bets[playerId]||{},ba=cb[betType]; if(!ba)return; const up=fs.players.map(p=>p.id===playerId?{...p,chips:p.chips+ba}:p); const{[betType]:r,...rest}=cb; saveGameState({...fs,players:up,bets:{...fs.bets,[playerId]:rest}}); showMessage('Returned $'+ba); };
 
-          const placeBet = async (betType, betLabel, amount) => {
-            if (!selectedDenomination && !amount) { showMessage('Select a chip denomination first'); return; }
-            const betAmount = amount || selectedDenomination;
-            const fs = await getFreshState();
-            if (!fs) { showMessage('Connection error'); return; }
-            const player = fs.players.find(p => p.id === playerId);
-            if (!player) return;
-            if (player.chips < betAmount) { showMessage('Not enough chips'); return; }
-            if (betType === 'passodds' && fs.point) {
-              const plb = (fs.bets[playerId]?.pass || 0);
-              if (plb === 0) { showMessage('Need a Pass Line bet first'); return; }
-              const co = (fs.bets[playerId]?.passodds || 0), mo = getMaxOdds(fs.point, plb);
-              if (co + betAmount > mo) { showMessage('Max odds: ' + (mo/plb) + 'x ($' + mo + ')'); return; }
-            }
-            if (betType === 'dontpassodds' && fs.point) {
-              const dpb = (fs.bets[playerId]?.dontpass || 0);
-              if (dpb === 0) { showMessage("Need a Don't Pass bet first"); return; }
-              const co = (fs.bets[playerId]?.dontpassodds || 0), mo = getMaxOdds(fs.point, dpb);
-              if (co + betAmount > mo) { showMessage('Max odds exceeded'); return; }
-            }
-            if (['pass','dontpass'].includes(betType) && betAmount < TABLE_MIN) { showMessage('Minimum $' + TABLE_MIN); return; }
-            if (['come','dontcome'].includes(betType) && betAmount < TABLE_MIN) { showMessage('Minimum $' + TABLE_MIN); return; }
-            if (betAmount < PROP_MIN) { showMessage('Minimum $' + PROP_MIN); return; }
-            if (fs.phase === 'point' && ['pass','dontpass'].includes(betType)) {
-              const cb = fs.bets[playerId] || {};
-              if (!cb[betType]) { showMessage("Can only bet Pass/Don't Pass on come out roll"); return; }
-            }
-            if (['come','dontcome'].includes(betType) && fs.phase !== 'point') { showMessage("Come/Don't Come only during point phase"); return; }
-            const up = fs.players.map(p => p.id === playerId ? { ...p, chips: p.chips - betAmount } : p);
-            const cb = fs.bets[playerId] || {};
-            const ub = { ...fs.bets, [playerId]: { ...cb, [betType]: (cb[betType] || 0) + betAmount } };
-            await saveToServer({ ...fs, players: up, bets: ub });
-            showMessage('Placed $' + betAmount + ' on ' + betLabel);
-          };
+          const pullAllBets = () => { const fs=getFreshState(); const cb=fs.bets[playerId]||{}; let pull={...cb},kept={}; if(fs.phase==='point'){if(cb.pass){kept.pass=cb.pass;delete pull.pass;}if(cb.dontpass){kept.dontpass=cb.dontpass;delete pull.dontpass;}} const t=Object.values(pull).reduce((s,b)=>s+b,0); if(!t){showMessage('Nothing to pull');return;} const up=fs.players.map(p=>p.id===playerId?{...p,chips:p.chips+t}:p); saveGameState({...fs,players:up,bets:{...fs.bets,[playerId]:kept}}); showMessage('Pulled $'+t); };
 
-          const removeBet = async (betType) => {
-            const fs = await getFreshState();
-            if (!fs) return;
-            if (['pass','dontpass'].includes(betType) && fs.phase === 'point') { showMessage("Can't remove contract bets"); return; }
-            const cb = fs.bets[playerId] || {};
-            const ba = cb[betType];
-            if (!ba) return;
-            const up = fs.players.map(p => p.id === playerId ? { ...p, chips: p.chips + ba } : p);
-            const { [betType]: removed, ...rest } = cb;
-            await saveToServer({ ...fs, players: up, bets: { ...fs.bets, [playerId]: rest } });
-            showMessage('Removed $' + ba + ' bet');
-          };
+          const placePresetBet = (preset) => { const fs=getFreshState(); const player=fs.players.find(p=>p.id===playerId); if(!player||!selectedDenomination){showMessage('Select denomination');return;} const csid=fs.playerOrder[fs.currentShooter],isCS=playerId===csid,pt=fs.point,mb=fs.bets[playerId]||{},hasPL=mb.pass>0; let btp=[]; const sk=n=>(isCS||hasPL)&&n===pt;
+            if(preset==='inside')[5,6,8,9].forEach(n=>{if(!sk(n))btp.push({type:'place'+n});});
+            else if(preset==='outside')[4,10].forEach(n=>{if(!sk(n))btp.push({type:'buy'+n});});
+            else if(preset==='across')[4,5,6,8,9,10].forEach(n=>{if(!sk(n))btp.push({type:(n===4||n===10?'buy':'place')+n});});
+            if(!btp.length){showMessage('All covered');return;} const tc=selectedDenomination*btp.length; if(player.chips<tc){showMessage('Need $'+tc);return;}
+            const up=fs.players.map(p=>p.id===playerId?{...p,chips:p.chips-tc}:p); const nb={...mb}; btp.forEach(b=>{nb[b.type]=(nb[b.type]||0)+selectedDenomination;});
+            saveGameState({...fs,players:up,bets:{...fs.bets,[playerId]:nb}}); showMessage(preset.charAt(0).toUpperCase()+preset.slice(1)+': $'+tc); };
 
-          const pullAllBets = async () => {
-            const fs = await getFreshState();
-            if (!fs) return;
-            const cb = fs.bets[playerId] || {};
-            let pullable = { ...cb }, kept = {};
-            if (fs.phase === 'point') {
-              if (cb.pass) { kept.pass = cb.pass; delete pullable.pass; }
-              if (cb.dontpass) { kept.dontpass = cb.dontpass; delete pullable.dontpass; }
-            }
-            const total = Object.values(pullable).reduce((s, b) => s + b, 0);
-            if (total === 0) { showMessage('No removable bets'); return; }
-            const up = fs.players.map(p => p.id === playerId ? { ...p, chips: p.chips + total } : p);
-            await saveToServer({ ...fs, players: up, bets: { ...fs.bets, [playerId]: kept } });
-            showMessage('Pulled bets: $' + total);
-          };
-
-          const placePresetBet = async (preset) => {
-            const fs = await getFreshState();
-            if (!fs) return;
-            const player = fs.players.find(p => p.id === playerId);
-            if (!player || !selectedDenomination) { showMessage('Select a chip denomination first'); return; }
-            const csid = fs.playerOrder[fs.currentShooter];
-            const isCS = playerId === csid, point = fs.point;
-            const myBets = fs.bets[playerId] || {};
-            const hasPL = myBets.pass > 0;
-            let btp = [];
-            const skip = (n) => (isCS || hasPL) && n === point;
-            if (preset === 'inside') { [5,6,8,9].forEach(n => { if (!skip(n)) btp.push({ type: 'place'+n }); }); }
-            else if (preset === 'outside') { [4,10].forEach(n => { if (!skip(n)) btp.push({ type: 'buy'+n }); }); }
-            else if (preset === 'across') { [4,5,6,8,9,10].forEach(n => { if (!skip(n)) btp.push({ type: (n===4||n===10?'buy':'place')+n }); }); }
-            if (btp.length === 0) { showMessage('No bets to place'); return; }
-            const tc = selectedDenomination * btp.length;
-            if (player.chips < tc) { showMessage('Need $' + tc); return; }
-            const up = fs.players.map(p => p.id === playerId ? { ...p, chips: p.chips - tc } : p);
-            const nb = { ...myBets };
-            btp.forEach(b => { nb[b.type] = (nb[b.type] || 0) + selectedDenomination; });
-            await saveToServer({ ...fs, players: up, bets: { ...fs.bets, [playerId]: nb } });
-            showMessage('Placed ' + btp.length + ' ' + preset.toUpperCase() + ' bets ($' + tc + ')');
-          };
-
-          const getTotalBetsOnTable = () => {
-            if (!playerId || !gameState) return 0;
-            const mb = gameState.bets[playerId] || {};
-            let t = Object.values(mb).reduce((s, b) => s + b, 0);
-            ((gameState.comeBets || {})[playerId] || []).forEach(cb => { t += cb.amount; });
-            ((gameState.dontComeBets || {})[playerId] || []).forEach(cb => { t += cb.amount; });
-            return t;
-          };
+          const getTotalOnTable = () => { if(!playerId||!gameState)return 0; const mb=gameState.bets[playerId]||{}; let t=Object.values(mb).reduce((s,b)=>s+b,0); ((gameState.comeBets||{})[playerId]||[]).forEach(cb=>{t+=cb.amount;}); ((gameState.dontComeBets||{})[playerId]||[]).forEach(cb=>{t+=cb.amount;}); return t; };
 
           const rollDice = async () => {
-            if (isRolling || rollLockRef.current) return;
-            const fs = await getFreshState();
-            if (!fs) return;
-            const sid = fs.playerOrder[fs.currentShooter];
-            if (sid !== playerId) { showMessage('Not your turn to shoot'); return; }
-            rollLockRef.current = true;
-            setIsRolling(true); setMessage(''); setDealerCall('');
-            for (let i = 0; i < 10; i++) {
-              setDiceValues({ die1: Math.floor(Math.random()*6)+1, die2: Math.floor(Math.random()*6)+1 });
-              await new Promise(r => setTimeout(r, 80));
-            }
-            const die1 = Math.floor(Math.random()*6)+1, die2 = Math.floor(Math.random()*6)+1, total = die1+die2;
-            setDiceValues({ die1, die2 });
-            const call = getDealerCall(total, fs.phase, fs.point, die1, die2);
-            setDealerCall(call);
-            await new Promise(r => setTimeout(r, 500));
-            await processRoll(fs, die1, die2, total, call);
-            setIsRolling(false);
-            rollLockRef.current = false;
+            if(isRolling)return; const fs=getFreshState(); const sid=fs.playerOrder[fs.currentShooter]; if(sid!==playerId){showMessage('Not your roll');return;}
+            setIsRolling(true);setMessage('');setDealerCall('');
+            for(let i=0;i<12;i++){setDiceValues({die1:Math.floor(Math.random()*6)+1,die2:Math.floor(Math.random()*6)+1});await new Promise(r=>setTimeout(r,70));}
+            const d1=Math.floor(Math.random()*6)+1,d2=Math.floor(Math.random()*6)+1,tot=d1+d2;
+            setDiceValues({die1:d1,die2:d2}); const call=getDealerCall(tot,fs.phase,fs.point,d1,d2); setDealerCall(call);
+            await new Promise(r=>setTimeout(r,600)); processRoll(fs,d1,d2,tot,call); setIsRolling(false);
           };
 
-          const processRoll = async (gs, die1, die2, total, call) => {
-            const rollId = Date.now() + '_' + Math.random().toString(36).substr(2,6);
-            let ug = { ...gs, lastDice: { die1, die2 }, lastTotal: total, lastDealerCall: call,
-              comeBets: JSON.parse(JSON.stringify(gs.comeBets || {})),
-              dontComeBets: JSON.parse(JSON.stringify(gs.dontComeBets || {})),
-              rollId: rollId, lastRollShooter: playerId
-            };
-            const pay = {}, loss = {};
-            let msgs = [], sevenOut = false;
-            gs.players.forEach(p => { pay[p.id] = 0; loss[p.id] = 0; });
-
-            // ONE-ROLL BETS
-            gs.players.forEach(p => {
-              const b = gs.bets[p.id] || {};
-              if (b.field) {
-                if ([2,3,4,9,10,11,12].includes(total)) { pay[p.id] += (total===2||total===12) ? b.field*2 : b.field; }
-                else { loss[p.id] += b.field; }
-              }
-              if (b.horn) {
-                if ([2,3,11,12].includes(total)) { const hb=b.horn/4; pay[p.id]+=(total===2||total===12)?hb*30:hb*15; loss[p.id]+=hb*3; }
-                else { loss[p.id] += b.horn; }
-              }
-              if (b.ce) {
-                if ([2,3,12].includes(total)) { const h=b.ce/2; pay[p.id]+=h*7; loss[p.id]+=h; }
-                else if (total===11) { const h=b.ce/2; pay[p.id]+=h*15; loss[p.id]+=h; }
-                else { loss[p.id]+=b.ce; }
-              }
-            });
-            ug.bets = clearBets(gs.bets, ['field','horn','ce']);
-
-            // PASS/DON'T PASS
-            if (gs.phase === 'comeout') {
-              if (total===7||total===11) {
-                msgs.push('Natural! Pass wins');
-                gs.players.forEach(p => { const b=gs.bets[p.id]||{}; if(b.pass) pay[p.id]+=b.pass; if(b.dontpass) loss[p.id]+=b.dontpass; });
-                ug.bets = clearBets(ug.bets, ['pass','dontpass']);
-              } else if ([2,3,12].includes(total)) {
-                msgs.push('Craps!');
-                gs.players.forEach(p => { const b=gs.bets[p.id]||{}; if(b.pass) loss[p.id]+=b.pass; if(b.dontpass&&total!==12) pay[p.id]+=b.dontpass; });
-                ug.bets = clearBets(ug.bets, total===12?['pass']:['pass','dontpass']);
-              } else { msgs.push('Point is '+total); ug.point=total; ug.phase='point'; }
+          const processRoll = (gs,die1,die2,total,call) => {
+            let ug={...gs,lastDice:{die1,die2},lastTotal:total,lastDealerCall:call,comeBets:JSON.parse(JSON.stringify(gs.comeBets||{})),dontComeBets:JSON.parse(JSON.stringify(gs.dontComeBets||{}))};
+            const pay={},loss={}; let msgs=[],sevenOut=false; gs.players.forEach(p=>{pay[p.id]=0;loss[p.id]=0;});
+            // One-roll bets
+            gs.players.forEach(p=>{const b=gs.bets[p.id]||{};
+              if(b.field){if([2,3,4,9,10,11,12].includes(total)){pay[p.id]+=(total===2||total===12)?b.field*2:b.field;}else{loss[p.id]+=b.field;}}
+              if(b.horn){if([2,3,11,12].includes(total)){const hb=b.horn/4;pay[p.id]+=(total===2||total===12)?hb*30:hb*15;loss[p.id]+=hb*3;}else{loss[p.id]+=b.horn;}}
+              if(b.ce){if([2,3,12].includes(total)){const h=b.ce/2;pay[p.id]+=h*7;loss[p.id]+=h;}else if(total===11){const h=b.ce/2;pay[p.id]+=h*15;loss[p.id]+=h;}else{loss[p.id]+=b.ce;}}
+            }); ug.bets=clearBets(gs.bets,['field','horn','ce']);
+            // Pass/DP
+            if(gs.phase==='comeout'){
+              if(total===7||total===11){msgs.push('Natural — Pass wins');gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b.pass)pay[p.id]+=b.pass;if(b.dontpass)loss[p.id]+=b.dontpass;});ug.bets=clearBets(ug.bets,['pass','dontpass']);}
+              else if([2,3,12].includes(total)){msgs.push('Craps');gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b.pass)loss[p.id]+=b.pass;if(b.dontpass&&total!==12)pay[p.id]+=b.dontpass;});ug.bets=clearBets(ug.bets,total===12?['pass']:['pass','dontpass']);}
+              else{msgs.push('Point is '+total);ug.point=total;ug.phase='point';}
             } else {
-              if (total===7) {
-                sevenOut=true; msgs.push('Seven out!');
-                gs.players.forEach(p => {
-                  const b=gs.bets[p.id]||{};
-                  if(b.pass) loss[p.id]+=b.pass; if(b.passodds) loss[p.id]+=b.passodds;
-                  if(b.dontpass) pay[p.id]+=b.dontpass; if(b.dontpassodds) pay[p.id]+=getDPOddsWin(gs.point,b.dontpassodds);
-                  [4,5,6,8,9,10].forEach(n=>{if(b['place'+n])loss[p.id]+=b['place'+n];if(b['buy'+n])loss[p.id]+=b['buy'+n];});
-                  [4,6,8,10].forEach(n=>{if(b['hard'+n])loss[p.id]+=b['hard'+n];});
-                  if(b.come) pay[p.id]+=b.come; if(b.dontcome) loss[p.id]+=b.dontcome;
-                  (ug.comeBets[p.id]||[]).forEach(cb=>{loss[p.id]+=cb.amount;}); ug.comeBets[p.id]=[];
-                  (ug.dontComeBets[p.id]||[]).forEach(cb=>{pay[p.id]+=cb.amount;}); ug.dontComeBets[p.id]=[];
-                });
-                ug.point=null; ug.phase='comeout';
-                ug.currentShooter=(gs.currentShooter+1)%gs.playerOrder.length;
-                ug.bets={};
-              } else if (total===gs.point) {
-                msgs.push('Point made! Pass wins');
-                gs.players.forEach(p => {
-                  const b=gs.bets[p.id]||{};
-                  if(b.pass)pay[p.id]+=b.pass; if(b.passodds)pay[p.id]+=getOddsWin(gs.point,b.passodds);
-                  if(b.dontpass)loss[p.id]+=b.dontpass; if(b.dontpassodds)loss[p.id]+=b.dontpassodds;
-                });
-                const keep={};
-                gs.players.forEach(p=>{const b=gs.bets[p.id]||{};keep[p.id]={};
-                  [4,5,6,8,9,10].forEach(n=>{if(b['place'+n])keep[p.id]['place'+n]=b['place'+n];if(b['buy'+n])keep[p.id]['buy'+n]=b['buy'+n];});
-                  [4,6,8,10].forEach(n=>{if(b['hard'+n])keep[p.id]['hard'+n]=b['hard'+n];});
-                  if(b.come)keep[p.id].come=b.come;if(b.dontcome)keep[p.id].dontcome=b.dontcome;
-                });
-                ug.point=null; ug.phase='comeout'; ug.bets=keep;
-              }
+              if(total===7){sevenOut=true;msgs.push('Seven out');gs.players.forEach(p=>{const b=gs.bets[p.id]||{};
+                if(b.pass)loss[p.id]+=b.pass;if(b.passodds)loss[p.id]+=b.passodds;if(b.dontpass)pay[p.id]+=b.dontpass;if(b.dontpassodds)pay[p.id]+=getDPOW(gs.point,b.dontpassodds);
+                [4,5,6,8,9,10].forEach(n=>{if(b['place'+n])loss[p.id]+=b['place'+n];if(b['buy'+n])loss[p.id]+=b['buy'+n];});
+                [4,6,8,10].forEach(n=>{if(b['hard'+n])loss[p.id]+=b['hard'+n];});
+                if(b.come)pay[p.id]+=b.come;if(b.dontcome)loss[p.id]+=b.dontcome;
+                (ug.comeBets[p.id]||[]).forEach(cb=>{loss[p.id]+=cb.amount;});ug.comeBets[p.id]=[];
+                (ug.dontComeBets[p.id]||[]).forEach(cb=>{pay[p.id]+=cb.amount;});ug.dontComeBets[p.id]=[];
+              });ug.point=null;ug.phase='comeout';ug.currentShooter=(gs.currentShooter+1)%gs.playerOrder.length;ug.bets={};}
+              else if(total===gs.point){msgs.push('Point made — Pass wins');gs.players.forEach(p=>{const b=gs.bets[p.id]||{};
+                if(b.pass)pay[p.id]+=b.pass;if(b.passodds)pay[p.id]+=getOW(gs.point,b.passodds);if(b.dontpass)loss[p.id]+=b.dontpass;if(b.dontpassodds)loss[p.id]+=b.dontpassodds;});
+                const keep={};gs.players.forEach(p=>{const b=gs.bets[p.id]||{};keep[p.id]={};[4,5,6,8,9,10].forEach(n=>{if(b['place'+n])keep[p.id]['place'+n]=b['place'+n];if(b['buy'+n])keep[p.id]['buy'+n]=b['buy'+n];});[4,6,8,10].forEach(n=>{if(b['hard'+n])keep[p.id]['hard'+n]=b['hard'+n];});if(b.come)keep[p.id].come=b.come;if(b.dontcome)keep[p.id].dontcome=b.dontcome;});
+                ug.point=null;ug.phase='comeout';ug.bets=keep;}
             }
-
-            // COME/DON'T COME
-            if (gs.phase==='point'&&!sevenOut) {
-              gs.players.forEach(p=>{
-                const b=gs.bets[p.id]||{};
-                if(b.come){
-                  if(total===7||total===11){pay[p.id]+=b.come;if(ug.bets[p.id])delete ug.bets[p.id].come;}
-                  else if([2,3,12].includes(total)){loss[p.id]+=b.come;if(ug.bets[p.id])delete ug.bets[p.id].come;}
-                  else{if(!ug.comeBets[p.id])ug.comeBets[p.id]=[];const ex=ug.comeBets[p.id].find(x=>x.number===total);
-                    if(ex)ex.amount+=b.come;else ug.comeBets[p.id].push({number:total,amount:b.come});
-                    if(ug.bets[p.id])delete ug.bets[p.id].come;msgs.push('Come bet to '+total);}
-                }
-                if(b.dontcome){
-                  if(total===7||total===11){loss[p.id]+=b.dontcome;if(ug.bets[p.id])delete ug.bets[p.id].dontcome;}
-                  else if(total===2||total===3){pay[p.id]+=b.dontcome;if(ug.bets[p.id])delete ug.bets[p.id].dontcome;}
-                  else if(total===12){/* push */}
-                  else{if(!ug.dontComeBets[p.id])ug.dontComeBets[p.id]=[];const ex=ug.dontComeBets[p.id].find(x=>x.number===total);
-                    if(ex)ex.amount+=b.dontcome;else ug.dontComeBets[p.id].push({number:total,amount:b.dontcome});
-                    if(ug.bets[p.id])delete ug.bets[p.id].dontcome;}
-                }
-                (ug.comeBets[p.id]||[]).slice().forEach(cb=>{if(total===cb.number){pay[p.id]+=cb.amount;ug.comeBets[p.id]=ug.comeBets[p.id].filter(x=>x!==cb);}});
-                (ug.dontComeBets[p.id]||[]).slice().forEach(cb=>{if(total===cb.number){loss[p.id]+=cb.amount;ug.dontComeBets[p.id]=ug.dontComeBets[p.id].filter(x=>x!==cb);}});
-              });
-            }
-
-            // PLACE BETS
-            if(gs.phase==='point'&&!sevenOut&&[4,5,6,8,9,10].includes(total)){
-              gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b['place'+total])pay[p.id]+=getPlaceWin(total,b['place'+total]);});
-            }
-            // BUY BETS with 5% vig
-            if(gs.phase==='point'&&!sevenOut&&[4,5,6,8,9,10].includes(total)){
-              gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b['buy'+total]){const tw=getBuyWin(total,b['buy'+total]);pay[p.id]+=(tw-Math.ceil(tw*0.05));}});
-            }
-            // HARDWAYS
-            if(gs.phase==='point'&&!sevenOut){
-              [4,6,8,10].forEach(hn=>{
-                if(total===hn&&die1===die2){gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b['hard'+hn])pay[p.id]+=getHardwayWin(hn,b['hard'+hn]);});}
-                else if(total===hn&&die1!==die2){gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b['hard'+hn])loss[p.id]+=b['hard'+hn];});ug.bets=clearBets(ug.bets,['hard'+hn]);}
-              });
-            }
-
-            ug.players = gs.players.map(p=>({...p,chips:p.chips+(pay[p.id]||0)}));
-            ug.lastRollResult = { payouts: pay, losses: loss };
-            ug.lastRollMessage = msgs.join(' \u2022 ');
-            await saveToServer(ug);
-            setLastRollId(rollId);
-
-            const myNet = (pay[playerId]||0) - (loss[playerId]||0);
+            // Come/DC
+            if(gs.phase==='point'&&!sevenOut){gs.players.forEach(p=>{const b=gs.bets[p.id]||{};
+              if(b.come){if(total===7||total===11){pay[p.id]+=b.come;if(ug.bets[p.id])delete ug.bets[p.id].come;}else if([2,3,12].includes(total)){loss[p.id]+=b.come;if(ug.bets[p.id])delete ug.bets[p.id].come;}else{if(!ug.comeBets[p.id])ug.comeBets[p.id]=[];const ex=ug.comeBets[p.id].find(x=>x.number===total);if(ex)ex.amount+=b.come;else ug.comeBets[p.id].push({number:total,amount:b.come});if(ug.bets[p.id])delete ug.bets[p.id].come;}}
+              if(b.dontcome){if(total===7||total===11){loss[p.id]+=b.dontcome;if(ug.bets[p.id])delete ug.bets[p.id].dontcome;}else if(total===2||total===3){pay[p.id]+=b.dontcome;if(ug.bets[p.id])delete ug.bets[p.id].dontcome;}else if(total!==12){if(!ug.dontComeBets[p.id])ug.dontComeBets[p.id]=[];const ex=ug.dontComeBets[p.id].find(x=>x.number===total);if(ex)ex.amount+=b.dontcome;else ug.dontComeBets[p.id].push({number:total,amount:b.dontcome});if(ug.bets[p.id])delete ug.bets[p.id].dontcome;}}
+              (ug.comeBets[p.id]||[]).slice().forEach(cb=>{if(total===cb.number){pay[p.id]+=cb.amount;ug.comeBets[p.id]=ug.comeBets[p.id].filter(x=>x!==cb);}});
+              (ug.dontComeBets[p.id]||[]).slice().forEach(cb=>{if(total===cb.number){loss[p.id]+=cb.amount;ug.dontComeBets[p.id]=ug.dontComeBets[p.id].filter(x=>x!==cb);}});
+            });}
+            // Place
+            if(gs.phase==='point'&&!sevenOut&&[4,5,6,8,9,10].includes(total)){gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b['place'+total])pay[p.id]+=getPlW(total,b['place'+total]);});}
+            // Buy with vig
+            if(gs.phase==='point'&&!sevenOut&&[4,5,6,8,9,10].includes(total)){gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b['buy'+total]){const tw=getBW(total,b['buy'+total]);pay[p.id]+=(tw-Math.ceil(tw*0.05));}});}
+            // Hardways
+            if(gs.phase==='point'&&!sevenOut){[4,6,8,10].forEach(hn=>{if(total===hn&&die1===die2){gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b['hard'+hn])pay[p.id]+=getHW(hn,b['hard'+hn]);});}else if(total===hn){gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b['hard'+hn])loss[p.id]+=b['hard'+hn];});ug.bets=clearBets(ug.bets,['hard'+hn]);}});}
+            ug.players=gs.players.map(p=>({...p,chips:p.chips+(pay[p.id]||0)}));
+            saveGameState(ug);
+            const myNet=(pay[playerId]||0)-(loss[playerId]||0);
             if(myNet>0){setWinLossDisplay({playerId,amount:myNet,type:'win'});setTimeout(()=>setWinLossDisplay(null),3000);}
             else if(myNet<0){setWinLossDisplay({playerId,amount:Math.abs(myNet),type:'loss'});setTimeout(()=>setWinLossDisplay(null),3000);}
-            if(msgs.length>0) showMessage(msgs.join(' \u2022 '));
+            if(msgs.length)showMessage(msgs.join(' · '));
           };
 
-          const clearBets = (bets, types) => {
-            const nb={};Object.keys(bets).forEach(pid=>{nb[pid]={};Object.keys(bets[pid]||{}).forEach(bt=>{if(!types.includes(bt))nb[pid][bt]=bets[pid][bt];});});return nb;
-          };
-          const getOddsWin=(pt,bet)=>{if(pt===4||pt===10)return bet*2;if(pt===5||pt===9)return bet*1.5;if(pt===6||pt===8)return bet*1.2;return 0;};
-          const getDPOddsWin=(pt,bet)=>{if(pt===4||pt===10)return bet*0.5;if(pt===5||pt===9)return bet*(2/3);if(pt===6||pt===8)return bet*(5/6);return 0;};
-          const getPlaceWin=(n,bet)=>{if(n===4||n===10)return Math.floor(bet*(9/5));if(n===5||n===9)return Math.floor(bet*(7/5));if(n===6||n===8)return Math.floor(bet*(7/6));return 0;};
-          const getBuyWin=(n,bet)=>{if(n===4||n===10)return bet*2;if(n===5||n===9)return bet*1.5;if(n===6||n===8)return bet*1.2;return 0;};
-          const getHardwayWin=(n,bet)=>{if(n===4||n===10)return bet*7;if(n===6||n===8)return bet*9;return 0;};
+          const clearBets=(bets,types)=>{const nb={};Object.keys(bets).forEach(pid=>{nb[pid]={};Object.keys(bets[pid]||{}).forEach(bt=>{if(!types.includes(bt))nb[pid][bt]=bets[pid][bt];});});return nb;};
+          const getOW=(pt,b)=>{if(pt===4||pt===10)return b*2;if(pt===5||pt===9)return b*1.5;if(pt===6||pt===8)return b*1.2;return 0;};
+          const getDPOW=(pt,b)=>{if(pt===4||pt===10)return b*0.5;if(pt===5||pt===9)return b*(2/3);if(pt===6||pt===8)return b*(5/6);return 0;};
+          const getPlW=(n,b)=>{if(n===4||n===10)return Math.floor(b*(9/5));if(n===5||n===9)return Math.floor(b*(7/5));if(n===6||n===8)return Math.floor(b*(7/6));return 0;};
+          const getBW=(n,b)=>{if(n===4||n===10)return b*2;if(n===5||n===9)return b*1.5;if(n===6||n===8)return b*1.2;return 0;};
+          const getHW=(n,b)=>{if(n===4||n===10)return b*7;if(n===6||n===8)return b*9;return 0;};
           const showMessage=(msg)=>{setMessage(msg);setTimeout(()=>setMessage(''),4000);};
-          const getChipForAmount=(amount)=>{for(let i=CHIP_VALUES.length-1;i>=0;i--){if(amount>=CHIP_VALUES[i].value)return CHIP_VALUES[i];}return CHIP_VALUES[0];};
+          const getChipFor=(amount)=>{for(let i=CHIP_VALUES.length-1;i>=0;i--){if(amount>=CHIP_VALUES[i].value)return CHIP_VALUES[i];}return CHIP_VALUES[0];};
 
-          const CasinoChip=({chipInfo,onClick,disabled,selected,small=false,draggable:isDraggable=false,onDragStart:onDS,onDragEnd:onDE})=>{
-            const[isDragging,setIsDragging]=useState(false);
-            return(<div className={'casino-chip '+(small?'small ':'')+( selected?'chip-selected ':'')+(isDragging?'dragging':'')}
-              style={{'--chip-color':chipInfo.color,opacity:disabled?0.5:1,cursor:disabled?'not-allowed':(isDraggable?'grab':'pointer')}}
-              onClick={()=>!disabled&&onClick&&onClick(chipInfo)} draggable={isDraggable&&!disabled}
-              onDragStart={(e)=>{if(isDraggable&&!disabled&&onDS){setIsDragging(true);onDS(e);}}}
-              onDragEnd={(e)=>{setIsDragging(false);if(onDE)onDE(e);}}
+          // Components
+          const Chip=({chipInfo,onClick,disabled,selected,small=false,draggable:isDrag=false,onDragStart:onDS,onDragEnd:onDE})=>{
+            const[dr,setDr]=useState(false);
+            return(<div className={'casino-chip'+(small?' small':'')+(selected?' chip-selected':'')+(dr?' dragging':'')}
+              style={{'--chip-color':chipInfo.color,opacity:disabled?0.35:1,cursor:disabled?'not-allowed':(isDrag?'grab':'pointer'),background:chipInfo.color}}
+              onClick={()=>!disabled&&onClick&&onClick(chipInfo)} draggable={isDrag&&!disabled}
+              onDragStart={e=>{if(isDrag&&!disabled&&onDS){setDr(true);onDS(e);}}} onDragEnd={e=>{setDr(false);if(onDE)onDE(e);}}
             ><span className="chip-value">${chipInfo.value}</span></div>);
           };
 
-          const Dice=({value})=>{
+          const Die=({value})=>{
             const dp={1:[[50,50]],2:[[25,25],[75,75]],3:[[25,25],[50,50],[75,75]],4:[[25,25],[25,75],[75,25],[75,75]],5:[[25,25],[25,75],[50,50],[75,25],[75,75]],6:[[25,25],[25,50],[25,75],[75,25],[75,50],[75,75]]};
-            return(<div className="die" style={{width:80,height:80,position:'relative'}}>{dp[value].map((pos,i)=>(<div key={i} className="die-dot" style={{position:'absolute',left:pos[0]+'%',top:pos[1]+'%',transform:'translate(-50%,-50%)'}}/>))}</div>);
+            return(<div className="die-face" style={{width:72,height:72,position:'relative'}}>
+              {dp[value].map((pos,i)=>(<div key={i} className="die-pip" style={{position:'absolute',left:pos[0]+'%',top:pos[1]+'%',transform:'translate(-50%,-50%)'}}/>))}
+            </div>);
           };
 
-          const BetBox=({betType,label,className='',style={},isOff=false})=>{
+          const BetBox=({betType,label,sublabel,className='',style={},isOff=false})=>{
             const allBets=gameState?.bets||{};
-            return(<div onClick={()=>selectedDenomination&&placeBet(betType,label)} className={'bet-box '+className+(isOff?' off':'')}
-              style={{...style,minHeight:'50px',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <div style={{textAlign:'center',color:'#ffd700',fontWeight:'bold',fontSize:'14px',textShadow:'1px 1px 2px #000',position:'relative',zIndex:1}}>
-                {label}{isOff&&<div style={{fontSize:'10px',color:'#999'}}>OFF</div>}
+            return(<div onClick={()=>selectedDenomination&&placeBet(betType,label)} className={'bet-area'+(isOff?' off':'')}
+              style={{...style,minHeight:'48px',display:'flex',alignItems:'center',justifyContent:'center',flexDirection:'column',padding:'6px 4px',position:'relative'}}>
+              <div style={{textAlign:'center',position:'relative',zIndex:1}}>
+                <div style={{color:'var(--brass)',fontWeight:600,fontSize:'12px',fontFamily:'var(--font-body)',letterSpacing:'0.5px',textTransform:'uppercase'}}>{label}</div>
+                {sublabel&&<div style={{color:'var(--ivory-muted)',fontSize:'9px',marginTop:'2px',fontFamily:'var(--font-mono)'}}>{sublabel}</div>}
+                {isOff&&<div style={{fontSize:'8px',color:'var(--ivory-muted)',letterSpacing:'2px',marginTop:'2px'}}>OFF</div>}
               </div>
-              <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',display:'flex',flexWrap:'wrap',gap:'6px',zIndex:2,alignItems:'center',justifyContent:'center'}}>
+              <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',display:'flex',flexWrap:'wrap',gap:'4px',zIndex:2,alignItems:'center',justifyContent:'center'}}>
                 {gameState?.players.map(player=>{
-                  const pb=allBets[player.id]?.[betType]; if(!pb)return null;
-                  const isMe=player.id===playerId, ci=getChipForAmount(pb);
-                  return(<div key={player.id} style={{textAlign:'center',display:'flex',alignItems:'center',gap:'4px',background:isMe?'rgba(255,215,0,0.4)':'rgba(0,0,0,0.3)',padding:'4px 6px',borderRadius:'6px',border:isMe?'2px solid #ffd700':'1px solid rgba(255,255,255,0.2)'}}>
-                    <CasinoChip chipInfo={ci} onClick={()=>{}} disabled={false} small={true} draggable={isMe}
-                      onDragStart={(e)=>{setIsDraggingChip(true);setDraggedBetType(betType);e.dataTransfer.effectAllowed='move';}}
+                  const pb=allBets[player.id]?.[betType];if(!pb)return null;const isMe=player.id===playerId,ci=getChipFor(pb);
+                  return(<div key={player.id} style={{display:'flex',alignItems:'center',gap:'3px',background:isMe?'rgba(201,168,76,0.2)':'rgba(0,0,0,0.4)',padding:'3px 5px',borderRadius:'6px',border:isMe?'1px solid var(--brass-dim)':'1px solid rgba(255,255,255,0.06)'}}>
+                    <Chip chipInfo={ci} onClick={()=>{}} disabled={false} small={true} draggable={isMe}
+                      onDragStart={e=>{setIsDraggingChip(true);setDraggedBetType(betType);e.dataTransfer.effectAllowed='move';}}
                       onDragEnd={()=>{setIsDraggingChip(false);setDraggedBetType(null);}}/>
-                    <div style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}>
-                      <div style={{fontSize:'10px',color:'#fff',fontWeight:'bold',textShadow:'1px 1px 2px #000',lineHeight:'1.2'}}>{player.name.substring(0,6)}</div>
-                      <div style={{fontSize:'12px',color:'#ffd700',fontWeight:'bold',textShadow:'1px 1px 2px #000',lineHeight:'1.2'}}>${pb}</div>
+                    <div style={{display:'flex',flexDirection:'column'}}>
+                      <div style={{fontSize:'8px',color:'var(--ivory-dim)',fontWeight:600,lineHeight:1.2}}>{player.name.substring(0,5)}</div>
+                      <div style={{fontSize:'10px',color:'var(--brass)',fontWeight:700,fontFamily:'var(--font-mono)',lineHeight:1.2}}>${pb}</div>
                     </div>
                   </div>);
                 })}
@@ -585,62 +376,63 @@
             </div>);
           };
 
-          const ComeBetDisplay=({number})=>{
-            const cb=(gameState?.comeBets||{}),dcb=(gameState?.dontComeBets||{});
-            const bets=[];
-            gameState?.players.forEach(p=>{
-              (cb[p.id]||[]).filter(x=>x.number===number).forEach(x=>bets.push({player:p,amount:x.amount,type:'come'}));
-              (dcb[p.id]||[]).filter(x=>x.number===number).forEach(x=>bets.push({player:p,amount:x.amount,type:'dontcome'}));
-            });
-            if(bets.length===0)return null;
-            return(<div style={{display:'flex',flexWrap:'wrap',gap:'3px',justifyContent:'center',marginTop:'2px'}}>
-              {bets.map((b,i)=>(<div key={i} style={{fontSize:'9px',padding:'2px 4px',borderRadius:'4px',
-                background:b.type==='come'?'rgba(0,255,0,0.3)':'rgba(255,0,0,0.3)',
-                border:b.player.id===playerId?'1px solid #ffd700':'1px solid rgba(255,255,255,0.2)',
-                color:'#fff',fontWeight:'bold'}}>{b.type==='come'?'C':'DC'} ${b.amount} {b.player.name.substring(0,4)}</div>))}
+          const ComeBets=({number})=>{
+            const cb=gameState?.comeBets||{},dcb=gameState?.dontComeBets||{};const bets=[];
+            gameState?.players.forEach(p=>{(cb[p.id]||[]).filter(x=>x.number===number).forEach(x=>bets.push({player:p,amount:x.amount,type:'C'}));(dcb[p.id]||[]).filter(x=>x.number===number).forEach(x=>bets.push({player:p,amount:x.amount,type:'DC'}));});
+            if(!bets.length)return null;
+            return(<div style={{display:'flex',gap:'2px',justifyContent:'center',marginTop:'3px',flexWrap:'wrap'}}>
+              {bets.map((b,i)=>(<div key={i} style={{fontSize:'8px',padding:'1px 4px',borderRadius:'3px',background:b.type==='C'?'rgba(46,204,113,0.2)':'rgba(231,76,60,0.2)',color:'var(--ivory-dim)',fontWeight:600,fontFamily:'var(--font-mono)'}}>{b.type} ${b.amount}</div>))}
             </div>);
           };
 
-          if(isLoading) return(<div className="loading-screen"><div className="loading-spinner"></div><div style={{fontSize:'24px',color:'#ffd700',fontWeight:'bold'}}>🎲 Connecting to table...</div></div>);
-          if(!gameState) return(<div className="loading-screen"><div style={{fontSize:'24px',color:'#ff6666'}}>Failed to connect. Please refresh.</div></div>);
+          if(!gameState) return(<div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh'}}><div style={{width:40,height:40,border:'2px solid var(--brass-dim)',borderTop:'2px solid var(--brass)',borderRadius:'50%',animation:'spin 1s linear infinite'}}/></div>);
 
-          const currentPlayer=gameState.players.find(p=>p.id===playerId);
-          const shooterId=gameState.playerOrder?.[gameState.currentShooter];
-          const isShooter=currentPlayer&&shooterId===playerId;
-          const shooter=gameState.players.find(p=>p.id===shooterId);
-          const currentShooterName=shooter?.name||'Waiting...';
-          const betsAreOff=gameState.phase==='comeout';
-          const totalOnTable=getTotalBetsOnTable();
-          const isAboveStarting=currentPlayer&&currentPlayer.chips>=STARTING_CHIPS;
+          const cp=gameState.players.find(p=>p.id===playerId);
+          const sid=gameState.playerOrder?.[gameState.currentShooter];
+          const isShooter=cp&&sid===playerId;
+          const shooter=gameState.players.find(p=>p.id===sid);
+          const shooterName=shooter?.name||'—';
+          const betsOff=gameState.phase==='comeout';
+          const totOnTable=getTotalOnTable();
 
-          if(showJoinModal||!currentPlayer){
+          // ====== JOIN SCREEN ======
+          if(showJoinModal||!cp){
             return(
-              <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',padding:'20px'}}>
-                <div style={{background:'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',padding:'40px',borderRadius:'20px',boxShadow:'0 10px 40px rgba(0,0,0,0.5)',maxWidth:'500px',width:'100%',border:'3px solid #ffd700'}}>
-                  <h1 style={{color:'#ffd700',fontSize:'36px',fontWeight:'bold',marginBottom:'10px',textAlign:'center',textShadow:'2px 2px 4px #000'}}>🎲 VEGAS CRAPS 🎲</h1>
-                  <div style={{textAlign:'center',marginBottom:'5px'}}><span className="online-dot"></span><span style={{color:'#00ff00',fontSize:'14px'}}>ONLINE MULTIPLAYER</span></div>
-                  <p style={{color:'#fff',textAlign:'center',marginBottom:'30px'}}>Join the table and play with others in real-time!</p>
-                  <input type="text" placeholder="Enter your name" value={playerName}
-                    onChange={(e)=>setPlayerName(e.target.value)}
-                    onKeyDown={(e)=>e.key==='Enter'&&joinGame()}
-                    style={{width:'100%',padding:'15px',border:'3px solid #ffd700',borderRadius:'10px',marginBottom:'20px',fontSize:'18px',background:'#fff'}}
-                    maxLength={15} autoFocus/>
-                  <button onClick={joinGame} disabled={!playerName.trim()||gameState.players.length>=MAX_PLAYERS}
-                    style={{width:'100%',background:'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)',color:'#fff',padding:'15px',borderRadius:'10px',fontSize:'20px',fontWeight:'bold',border:'none',cursor:'pointer',boxShadow:'0 4px 8px rgba(0,0,0,0.3)'}}>
-                    {gameState.players.length>=MAX_PLAYERS?'TABLE FULL (6/6)':'JOIN TABLE ('+gameState.players.length+'/6)'}
-                  </button>
-                  <div style={{marginTop:'30px',color:'#fff',fontSize:'14px'}}>
-                    <p style={{fontWeight:'bold',marginBottom:'10px',color:'#ffd700'}}>Table Rules:</p>
-                    <ul style={{listStyle:'none',lineHeight:'1.8'}}>
-                      <li>💰 Starting chips: $250</li><li>🎯 Table minimum: $15</li><li>🎲 Prop minimum: $1</li>
-                      <li>👥 Max players: 6</li><li>📊 Odds: 3-4-5x</li><li>💵 Buy bets: 5% vig on win</li>
-                    </ul>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',padding:'20px',background:'var(--bg-deep)'}}>
+                <div style={{maxWidth:'440px',width:'100%',animation:'fadeUp 0.6s ease'}}>
+                  <div style={{textAlign:'center',marginBottom:'48px'}}>
+                    <div style={{fontFamily:'var(--font-display)',fontSize:'48px',fontWeight:600,color:'var(--ivory)',letterSpacing:'-1px',lineHeight:1.1}}>The Ivory Room</div>
+                    <div style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--brass)',letterSpacing:'4px',textTransform:'uppercase',marginTop:'12px'}}>Private Craps Table</div>
+                    <div style={{width:'60px',height:'1px',background:'linear-gradient(90deg, transparent, var(--brass), transparent)',margin:'20px auto'}}/>
+                  </div>
+                  <div style={{background:'var(--bg-card)',borderRadius:'16px',padding:'36px',border:'1px solid rgba(201,168,76,0.1)',boxShadow:'var(--shadow-lg)'}}>
+                    <input type="text" placeholder="Your name" value={playerName} onChange={e=>setPlayerName(e.target.value)}
+                      onKeyDown={e=>e.key==='Enter'&&joinGame()}
+                      style={{width:'100%',padding:'14px 18px',border:'1px solid rgba(201,168,76,0.2)',borderRadius:'10px',fontSize:'16px',background:'var(--bg-elevated)',color:'var(--ivory)',fontFamily:'var(--font-body)',outline:'none',transition:'border 0.2s'}}
+                      maxLength={15} autoFocus/>
+                    <button onClick={joinGame} disabled={!playerName.trim()||gameState.players.length>=MAX_PLAYERS} className="btn"
+                      style={{width:'100%',marginTop:'16px',padding:'14px',borderRadius:'10px',fontSize:'15px',fontWeight:600,
+                        background:(!playerName.trim()||gameState.players.length>=MAX_PLAYERS)?'var(--bg-elevated)':'linear-gradient(135deg, var(--brass-dim), var(--brass))',
+                        color:(!playerName.trim()||gameState.players.length>=MAX_PLAYERS)?'var(--ivory-muted)':'var(--bg-deep)'}}>
+                      {gameState.players.length>=MAX_PLAYERS?'Table Full':'Take a Seat'}
+                    </button>
+                  </div>
+                  <div style={{marginTop:'32px',display:'grid',gridTemplateColumns:'repeat(3, 1fr)',gap:'1px',background:'rgba(201,168,76,0.06)',borderRadius:'10px',overflow:'hidden'}}>
+                    {[['$250','Buy-in'],['$15','Minimum'],['3-4-5×','Odds']].map(([v,l],i)=>(
+                      <div key={i} style={{padding:'16px',textAlign:'center',background:'var(--bg-card)'}}>
+                        <div style={{fontFamily:'var(--font-mono)',fontSize:'16px',fontWeight:700,color:'var(--brass)'}}>{v}</div>
+                        <div style={{fontSize:'10px',color:'var(--ivory-muted)',marginTop:'4px',textTransform:'uppercase',letterSpacing:'1px'}}>{l}</div>
+                      </div>
+                    ))}
                   </div>
                   {gameState.players.length>0&&(
-                    <div style={{marginTop:'20px',padding:'15px',background:'rgba(255,215,0,0.1)',borderRadius:'10px',border:'1px solid #ffd700'}}>
-                      <p style={{fontWeight:'bold',fontSize:'14px',marginBottom:'10px',color:'#ffd700'}}>Players at table:</p>
+                    <div style={{marginTop:'24px',padding:'20px',background:'var(--bg-card)',borderRadius:'12px',border:'1px solid rgba(201,168,76,0.06)'}}>
+                      <div style={{fontSize:'10px',color:'var(--brass)',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px',fontWeight:600}}>At the Table</div>
                       {gameState.playerOrder?.map((pid,idx)=>{const p=gameState.players.find(pl=>pl.id===pid);if(!p)return null;
-                        return <div key={p.id} style={{color:'#fff',fontSize:'14px',marginBottom:'5px'}}>{idx===gameState.currentShooter&&'🎲 '}🎰 {p.name} (${p.chips})</div>;
+                        return(<div key={p.id} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:'14px'}}>
+                          <span style={{color:'var(--ivory-dim)'}}>{idx===gameState.currentShooter?'◆ ':''}{p.name}</span>
+                          <span style={{fontFamily:'var(--font-mono)',color:'var(--brass)'}}>${p.chips}</span>
+                        </div>);
                       })}
                     </div>
                   )}
@@ -649,170 +441,199 @@
             );
           }
 
-          const handleDZOver=(e)=>{e.preventDefault();e.currentTarget.classList.add('drag-over');};
-          const handleDZLeave=(e)=>{e.currentTarget.classList.remove('drag-over');};
-          const handleDZDrop=(e)=>{e.preventDefault();e.currentTarget.classList.remove('drag-over');if(draggedBetType){removeBet(draggedBetType);setDraggedBetType(null);}};
+          const handleDZOver=e=>{e.preventDefault();e.currentTarget.classList.add('drag-over');};
+          const handleDZLeave=e=>{e.currentTarget.classList.remove('drag-over');};
+          const handleDZDrop=e=>{e.preventDefault();e.currentTarget.classList.remove('drag-over');if(draggedBetType){removeBet(draggedBetType);setDraggedBetType(null);}};
 
+          // ====== MAIN TABLE ======
           return(
-            <div style={{minHeight:'100vh',padding:'10px',background:'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)',position:'relative'}}>
+            <div style={{minHeight:'100vh',padding:'12px',background:'var(--bg-deep)',position:'relative'}}>
+              {/* Result overlay */}
               {winLossDisplay&&winLossDisplay.playerId===playerId&&(
-                <div className="win-loss-display" style={{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:9999,
-                  background:winLossDisplay.type==='win'?'linear-gradient(135deg, #00ff00 0%, #00aa00 100%)':'linear-gradient(135deg, #ff0000 0%, #aa0000 100%)',
-                  color:'#fff',padding:'40px 60px',borderRadius:'20px',fontSize:'48px',fontWeight:'bold',textAlign:'center',
-                  boxShadow:'0 10px 40px rgba(0,0,0,0.8)',border:'5px solid #ffd700',textShadow:'3px 3px 6px rgba(0,0,0,0.5)'}}>
-                  {winLossDisplay.type==='win'?'+ $':'- $'}{winLossDisplay.amount}
-                  <div style={{fontSize:'24px',marginTop:'10px'}}>{winLossDisplay.type==='win'?'🎉 WINNER! 🎉':'💔 LOST 💔'}</div>
+                <div className="result-overlay" style={{position:'fixed',top:'50%',left:'50%',zIndex:9999,
+                  background:'rgba(12,12,14,0.85)',backdropFilter:'blur(12px)',
+                  padding:'40px 56px',borderRadius:'20px',textAlign:'center',
+                  border:winLossDisplay.type==='win'?'1px solid rgba(46,204,113,0.3)':'1px solid rgba(231,76,60,0.3)',
+                  boxShadow:winLossDisplay.type==='win'?'0 0 60px rgba(46,204,113,0.15)':'0 0 60px rgba(231,76,60,0.15)'}}>
+                  <div style={{fontFamily:'var(--font-display)',fontSize:'52px',fontWeight:600,color:winLossDisplay.type==='win'?'var(--green-win)':'var(--loss-red)'}}>
+                    {winLossDisplay.type==='win'?'+':'-'}${winLossDisplay.amount}
+                  </div>
+                  <div style={{fontSize:'11px',letterSpacing:'3px',textTransform:'uppercase',color:'var(--ivory-muted)',marginTop:'8px'}}>
+                    {winLossDisplay.type==='win'?'Winner':'Lost'}
+                  </div>
                 </div>
               )}
+
+              {/* Dealer call */}
               {dealerCall&&(
-                <div style={{position:'fixed',top:'20px',left:'50%',transform:'translateX(-50%)',zIndex:1000,
-                  background:'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',color:'#ffd700',padding:'20px 40px',borderRadius:'15px',
-                  fontSize:'32px',fontWeight:'bold',textAlign:'center',boxShadow:'0 8px 24px rgba(0,0,0,0.8)',border:'3px solid #ffd700',textShadow:'2px 2px 4px #000'}}>
+                <div className="dealer-banner" style={{position:'fixed',top:'16px',left:'50%',zIndex:1000,
+                  background:'rgba(12,12,14,0.9)',backdropFilter:'blur(8px)',color:'var(--brass)',
+                  padding:'12px 32px',borderRadius:'100px',fontSize:'18px',fontWeight:500,fontFamily:'var(--font-display)',fontStyle:'italic',
+                  border:'1px solid rgba(201,168,76,0.15)',boxShadow:'var(--shadow-lg)',letterSpacing:'0.5px'}}>
                   {dealerCall}
                 </div>
               )}
-              <div className="craps-table-container">
-                <div style={{background:'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',color:'#ffd700',padding:'15px',borderRadius:'10px',marginBottom:'10px',boxShadow:'0 4px 12px rgba(0,0,0,0.5)',border:'2px solid #ffd700'}}>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'10px'}}>
-                    <div>
-                      <h1 style={{fontSize:'24px',fontWeight:'bold',textShadow:'2px 2px 4px #000'}}>🎲 VEGAS CRAPS TABLE</h1>
-                      <div style={{fontSize:'12px',color:'#fff'}}><span className="online-dot"></span>LIVE • Min: $15 • Odds: 3-4-5x • Buy: 5% vig</div>
-                    </div>
-                    <div className="chip-rack" style={{textAlign:'center',minWidth:'200px'}}>
-                      <div style={{fontSize:'14px',color:'#ffd700',marginBottom:'5px',fontWeight:'bold'}}>{currentPlayer.name}'s RACK</div>
-                      <div style={{fontSize:'28px',fontWeight:'bold',color:isAboveStarting?'#00ff00':'#ff0000'}}>${currentPlayer.chips}</div>
-                      <div style={{fontSize:'12px',color:'#fff',marginTop:'5px'}}>On Table: ${totalOnTable}</div>
-                      {currentPlayer.chips<TABLE_MIN&&(
-                        <button onClick={rebuy} style={{marginTop:'8px',background:'#ffd700',color:'#000',padding:'5px 10px',borderRadius:'5px',border:'none',fontWeight:'bold',cursor:'pointer',fontSize:'12px'}}>Rebuy +$250</button>
-                      )}
-                    </div>
+
+              <div style={{maxWidth:'900px',margin:'0 auto'}}>
+                {/* Header */}
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'16px 0',marginBottom:'8px',flexWrap:'wrap',gap:'12px'}}>
+                  <div>
+                    <div style={{fontFamily:'var(--font-display)',fontSize:'22px',fontWeight:600,color:'var(--ivory)',letterSpacing:'-0.5px'}}>The Ivory Room</div>
+                    <div style={{fontFamily:'var(--font-mono)',fontSize:'10px',color:'var(--ivory-muted)',letterSpacing:'1px',marginTop:'2px'}}>MIN $15 · ODDS 3-4-5× · BUY 5% VIG</div>
+                  </div>
+                  <div style={{background:'var(--bg-card)',borderRadius:'12px',padding:'12px 20px',border:'1px solid rgba(201,168,76,0.1)',textAlign:'right'}}>
+                    <div style={{fontSize:'10px',color:'var(--ivory-muted)',letterSpacing:'1px',textTransform:'uppercase'}}>{cp.name}</div>
+                    <div style={{fontFamily:'var(--font-mono)',fontSize:'24px',fontWeight:700,color:cp.chips>=STARTING_CHIPS?'var(--green-win)':'var(--loss-red)',letterSpacing:'-1px'}}>${cp.chips}</div>
+                    <div style={{fontSize:'10px',color:'var(--ivory-muted)',fontFamily:'var(--font-mono)'}}>table: ${totOnTable}</div>
+                    {cp.chips<TABLE_MIN&&<button onClick={rebuy} className="btn" style={{marginTop:'6px',padding:'4px 12px',borderRadius:'6px',fontSize:'10px',background:'var(--brass)',color:'var(--bg-deep)',fontWeight:700}}>Rebuy</button>}
                   </div>
                 </div>
 
-                <div style={{background:'#000',color:'#fff',padding:'15px',borderRadius:'10px',marginBottom:'10px',boxShadow:'0 4px 12px rgba(0,0,0,0.5)',border:'3px solid #ffd700'}}>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'10px',fontSize:'16px'}}>
-                    <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-                      <div className={'puck '+(gameState.phase==='comeout'?'off':'on')}>{gameState.phase==='comeout'?'OFF':'ON'}</div>
-                      <div style={{fontWeight:'bold'}}>
-                        {gameState.phase==='comeout'?<span style={{color:'#00ff00'}}>COME OUT ROLL</span>:
-                          <span style={{color:'#fff'}}>POINT IS <span style={{color:'#ffd700',fontSize:'24px'}}>{gameState.point}</span></span>}
-                      </div>
+                {/* Status */}
+                <div style={{display:'flex',alignItems:'center',gap:'16px',padding:'12px 16px',background:'var(--bg-card)',borderRadius:'10px',marginBottom:'10px',border:'1px solid rgba(255,255,255,0.04)',flexWrap:'wrap'}}>
+                  <div className={'puck-marker '+(gameState.phase==='comeout'?'off':'on')}>{gameState.phase==='comeout'?'OFF':'ON'}</div>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:600,fontSize:'14px'}}>
+                      {gameState.phase==='comeout'?<span style={{color:'var(--ivory-dim)'}}>Come Out Roll</span>:
+                        <span>Point: <span style={{fontFamily:'var(--font-mono)',fontSize:'20px',color:'var(--brass)',fontWeight:700}}>{gameState.point}</span></span>}
                     </div>
-                    <div><span style={{fontWeight:'bold',color:'#ffd700'}}>Shooter:</span> {currentShooterName}{isShooter&&<span style={{marginLeft:'10px',color:'#ff0000'}}>🎲 (YOU)</span>}</div>
-                    {gameState.lastTotal&&<div style={{fontWeight:'bold',color:'#ffd700'}}>Last: {gameState.lastTotal}</div>}
                   </div>
+                  <div style={{textAlign:'right'}}>
+                    <div style={{fontSize:'10px',color:'var(--ivory-muted)',textTransform:'uppercase',letterSpacing:'1px'}}>Shooter</div>
+                    <div style={{fontSize:'14px',fontWeight:600,color:isShooter?'var(--brass)':'var(--ivory-dim)'}}>{shooterName}{isShooter?' ◆':''}</div>
+                  </div>
+                  {gameState.lastTotal&&<div style={{fontFamily:'var(--font-mono)',fontSize:'13px',color:'var(--ivory-muted)',padding:'4px 10px',background:'rgba(255,255,255,0.03)',borderRadius:'6px'}}>Last: {gameState.lastTotal}</div>}
                 </div>
 
-                {message&&<div style={{background:'linear-gradient(135deg, #0066ff 0%, #0044cc 100%)',color:'#fff',padding:'15px',borderRadius:'10px',marginBottom:'10px',textAlign:'center',fontWeight:'bold',boxShadow:'0 4px 12px rgba(0,102,255,0.5)'}}>{message}</div>}
+                {/* Message */}
+                {message&&<div style={{padding:'10px 16px',borderRadius:'8px',marginBottom:'10px',textAlign:'center',fontSize:'13px',fontWeight:500,background:'rgba(201,168,76,0.06)',border:'1px solid rgba(201,168,76,0.12)',color:'var(--brass)'}}>{message}</div>}
 
-                {isDraggingChip&&(
-                  <div className="drop-zone" onDragOver={handleDZOver} onDragLeave={handleDZLeave} onDrop={handleDZDrop} style={{marginBottom:'10px'}}>
-                    <div style={{fontSize:'20px',color:'#ffd700',fontWeight:'bold'}}>⬇️ Drop Chip Here to Return to Rack ⬇️</div>
-                  </div>
-                )}
+                {/* Drop zone */}
+                {isDraggingChip&&<div className="drop-zone" onDragOver={handleDZOver} onDragLeave={handleDZLeave} onDrop={handleDZDrop} style={{marginBottom:'10px'}}>
+                  <div style={{fontSize:'13px',color:'var(--brass)',fontWeight:500,letterSpacing:'1px'}}>Return to Rack</div></div>}
 
-                <div className="felt-green" style={{borderRadius:'50px 50px 20px 20px',padding:'20px',border:'12px solid #8b4513',boxShadow:'0 8px 24px rgba(0,0,0,0.6), inset 0 0 30px rgba(0,0,0,0.4)',marginBottom:'10px'}}>
-                  <div style={{marginBottom:'15px'}}>
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
-                      <BetBox betType="come" label="COME" style={{height:'60px',fontSize:'24px',color:'#ff0000',background:'rgba(255,255,255,0.1)'}}/>
-                      <BetBox betType="dontcome" label="DON'T COME" style={{height:'60px',fontSize:'16px',background:'rgba(255,255,255,0.1)'}}/>
-                    </div>
+                {/* ====== TABLE FELT ====== */}
+                <div className="felt-surface" style={{borderRadius:'24px 24px 16px 16px',padding:'20px',
+                  border:'6px solid var(--rail)',boxShadow:'inset 0 2px 20px rgba(0,0,0,0.4), 0 4px 24px rgba(0,0,0,0.4), 0 0 0 2px var(--rail-edge)',marginBottom:'10px',
+                  backgroundImage:'linear-gradient(to right, var(--rail-light) 0px, transparent 8px, transparent calc(100% - 8px), var(--rail-light) 100%)'}}>
+
+                  {/* Come / Don't Come */}
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'14px'}}>
+                    <BetBox betType="come" label="Come" style={{height:'52px'}}/>
+                    <BetBox betType="dontcome" label="Don't Come" sublabel="Bar 12" style={{height:'52px'}}/>
                   </div>
-                  <div style={{display:'grid',gridTemplateColumns:'repeat(6, 1fr)',gap:'8px',marginBottom:'15px'}}>
+
+                  {/* Number grid */}
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(6, 1fr)',gap:'6px',marginBottom:'14px'}}>
                     {[4,5,6,8,9,10].map(num=>(
                       <div key={num} style={{position:'relative'}}>
-                        <div style={{fontSize:num===6||num===9?'32px':'40px',fontWeight:'bold',textAlign:'center',color:'#ffd700',textShadow:'2px 2px 4px #000',marginBottom:'5px',fontStyle:num===6||num===9?'italic':'normal'}}>
-                          {num===6?'six':num===9?'Nine':num}
+                        <div style={{fontFamily:'var(--font-display)',fontSize:num===6||num===9?'24px':'28px',fontWeight:700,textAlign:'center',color:'var(--ivory)',marginBottom:'4px',
+                          fontStyle:num===6||num===9?'italic':'normal',opacity:0.9}}>
+                          {num===6?'Six':num===9?'Nine':num}
                         </div>
-                        <div style={{display:'grid',gridTemplateRows:'1fr 1fr',gap:'4px'}}>
-                          <BetBox betType={'place'+num} label="PLACE" isOff={betsAreOff} style={{height:'50px',fontSize:'11px',background:gameState.point===num?'rgba(255,255,255,0.25)':'rgba(255,255,255,0.1)',border:gameState.point===num?'3px solid #fff':'2px solid #ffd700'}}/>
-                          <BetBox betType={'buy'+num} label={'BUY\n(5% vig)'} isOff={betsAreOff} style={{height:'50px',fontSize:'10px',background:'rgba(100,150,255,0.2)',whiteSpace:'pre-line'}}/>
+                        <div style={{display:'grid',gridTemplateRows:'1fr 1fr',gap:'3px'}}>
+                          <BetBox betType={'place'+num} label="Place" isOff={betsOff}
+                            style={{height:'42px',border:gameState.point===num?'1.5px solid var(--ivory)':'',background:gameState.point===num?'rgba(255,255,255,0.06)':''}}/>
+                          <BetBox betType={'buy'+num} label="Buy" sublabel="5% vig" isOff={betsOff} style={{height:'42px'}}/>
                         </div>
-                        <ComeBetDisplay number={num}/>
-                        {gameState.point===num&&<div className="puck on" style={{position:'absolute',top:'0px',right:'0px'}}>ON</div>}
+                        <ComeBets number={num}/>
+                        {gameState.point===num&&<div className="puck-marker on" style={{position:'absolute',top:'-2px',right:'-2px',width:'28px',height:'28px',fontSize:'7px'}}>ON</div>}
                       </div>
                     ))}
                   </div>
-                  <div style={{marginBottom:'15px'}}><BetBox betType="field" label="FIELD • 2-3-4-9-10-11-12 • Pay Double 2&12" style={{height:'60px',fontSize:'14px',background:'rgba(255,255,255,0.1)',color:'#ff0000'}}/></div>
-                  <div style={{background:'rgba(0,0,0,0.4)',padding:'15px',borderRadius:'15px',marginBottom:'15px'}}>
-                    <div style={{marginBottom:'12px'}}>
-                      <div style={{color:'#ffd700',fontSize:'14px',fontWeight:'bold',textAlign:'center',marginBottom:'8px',textShadow:'1px 1px 2px #000'}}>HARDWAYS</div>
-                      <div style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:'8px'}}>
-                        {[4,6,8,10].map(num=>(<BetBox key={num} betType={'hard'+num} label={'🎲🎲\nHard '+num+'\n'+(num===4||num===10?'7:1':'9:1')} isOff={betsAreOff} style={{height:'70px',fontSize:'11px',background:'rgba(255,200,0,0.2)',whiteSpace:'pre-line'}}/>))}
-                      </div>
+
+                  {/* Field */}
+                  <div style={{marginBottom:'14px'}}><BetBox betType="field" label="Field" sublabel="2·3·4·9·10·11·12 — Double on 2 & 12" style={{height:'48px'}}/></div>
+
+                  {/* Props */}
+                  <div style={{background:'rgba(0,0,0,0.2)',padding:'12px',borderRadius:'10px',marginBottom:'14px'}}>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:'6px',marginBottom:'8px'}}>
+                      {[4,6,8,10].map(num=>(
+                        <BetBox key={num} betType={'hard'+num} label={'Hard '+num} sublabel={(num===4||num===10)?'7:1':'9:1'} isOff={betsOff} style={{height:'52px'}}/>
+                      ))}
                     </div>
-                    <div>
-                      <div style={{color:'#ffd700',fontSize:'14px',fontWeight:'bold',textAlign:'center',marginBottom:'8px',textShadow:'1px 1px 2px #000'}}>ONE ROLL BETS</div>
-                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
-                        <BetBox betType="horn" label={'HORN\n30:1 / 15:1'} style={{height:'60px',fontSize:'12px',background:'rgba(255,100,100,0.3)',whiteSpace:'pre-line'}}/>
-                        <BetBox betType="ce" label="C & E" style={{height:'60px',fontSize:'18px',background:'rgba(255,100,100,0.3)'}}/>
-                      </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px'}}>
+                      <BetBox betType="horn" label="Horn" sublabel="30:1 / 15:1" style={{height:'44px'}}/>
+                      <BetBox betType="ce" label="C & E" sublabel="Any Craps / Yo" style={{height:'44px'}}/>
                     </div>
                   </div>
+
+                  {/* Odds */}
                   {gameState.point&&(
-                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
-                      <BetBox betType="passodds" label="ODDS ON PASS" style={{height:'50px',background:'rgba(0,255,0,0.2)',fontSize:'13px'}}/>
-                      <BetBox betType="dontpassodds" label="ODDS ON DON'T PASS" style={{height:'50px',background:'rgba(0,255,0,0.2)',fontSize:'12px'}}/>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+                      <BetBox betType="passodds" label="Pass Odds" style={{height:'44px',background:'rgba(46,204,113,0.06)',borderColor:'rgba(46,204,113,0.15)'}}/>
+                      <BetBox betType="dontpassodds" label="DP Odds" style={{height:'44px',background:'rgba(46,204,113,0.06)',borderColor:'rgba(46,204,113,0.15)'}}/>
                     </div>
                   )}
                 </div>
 
-                <div style={{background:'#fff',padding:'20px',borderRadius:'10px',marginBottom:'10px',boxShadow:'0 8px 16px rgba(0,0,0,0.4)'}}>
-                  <div style={{display:'flex',justifyContent:'center',gap:'20px',marginBottom:'20px'}}><Dice value={diceValues.die1}/><Dice value={diceValues.die2}/></div>
+                {/* Dice & Roll */}
+                <div style={{background:'var(--bg-card)',padding:'24px',borderRadius:'14px',marginBottom:'10px',border:'1px solid rgba(255,255,255,0.04)',textAlign:'center'}}>
+                  <div style={{display:'flex',justifyContent:'center',gap:'16px',marginBottom:'20px'}}>
+                    <Die value={diceValues.die1}/><Die value={diceValues.die2}/>
+                  </div>
                   {isShooter?(
-                    <button onClick={rollDice} disabled={isRolling}
-                      style={{width:'100%',background:isRolling?'#666':'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)',color:'#fff',padding:'20px',borderRadius:'10px',fontSize:'24px',fontWeight:'bold',border:'none',cursor:isRolling?'not-allowed':'pointer',boxShadow:'0 6px 12px rgba(0,0,0,0.4)'}}>
-                      {isRolling?'🎲 ROLLING...':'🎲 ROLL DICE'}
+                    <button onClick={rollDice} disabled={isRolling} className="btn"
+                      style={{width:'100%',maxWidth:'360px',padding:'16px',borderRadius:'12px',fontSize:'16px',fontWeight:700,letterSpacing:'1px',textTransform:'uppercase',
+                        background:isRolling?'var(--bg-elevated)':'linear-gradient(135deg, var(--red-accent), var(--red-deep))',
+                        color:isRolling?'var(--ivory-muted)':'var(--ivory)',boxShadow:isRolling?'none':'0 4px 20px rgba(192,57,43,0.3)'}}>
+                      {isRolling?'Rolling...':'Roll Dice'}
                     </button>
                   ):(
-                    <div style={{textAlign:'center',color:'#666',padding:'20px',fontWeight:'bold',fontSize:'18px'}}>Waiting for {currentShooterName} to roll...</div>
+                    <div style={{color:'var(--ivory-muted)',padding:'16px',fontSize:'14px',fontStyle:'italic',fontFamily:'var(--font-display)'}}>
+                      Waiting for {shooterName} to roll
+                    </div>
                   )}
                 </div>
 
-                <div style={{background:'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',padding:'15px',borderRadius:'10px',marginBottom:'10px',boxShadow:'0 4px 12px rgba(0,0,0,0.5)',border:'2px solid #ffd700'}}>
-                  <div style={{marginBottom:'10px'}}>
-                    <div style={{color:'#ffd700',fontWeight:'bold',fontSize:'14px',marginBottom:'8px'}}>Select Denomination:</div>
-                    <div style={{display:'flex',gap:'10px',flexWrap:'wrap',justifyContent:'center'}}>
-                      {CHIP_VALUES.map(ci=>(<CasinoChip key={ci.value} chipInfo={ci} onClick={(c)=>setSelectedDenomination(c.value)} disabled={currentPlayer.chips<ci.value} selected={selectedDenomination===ci.value}/>))}
-                    </div>
+                {/* Chips & Actions */}
+                <div style={{background:'var(--bg-card)',padding:'16px',borderRadius:'14px',marginBottom:'10px',border:'1px solid rgba(255,255,255,0.04)'}}>
+                  <div style={{display:'flex',gap:'12px',justifyContent:'center',marginBottom:'14px'}}>
+                    {CHIP_VALUES.map(ci=>(<Chip key={ci.value} chipInfo={ci} onClick={c=>setSelectedDenomination(c.value)} disabled={cp.chips<ci.value} selected={selectedDenomination===ci.value}/>))}
                   </div>
-                  <div style={{borderTop:'1px solid #ffd700',paddingTop:'10px'}}>
-                    <div style={{color:'#ffd700',fontWeight:'bold',fontSize:'14px',marginBottom:'8px'}}>Quick Actions:</div>
-                    <div style={{display:'flex',gap:'8px',flexWrap:'wrap',justifyContent:'center'}}>
-                      <button onClick={()=>placePresetBet('inside')} disabled={!selectedDenomination} style={{background:'#000',color:'#fff',padding:'8px 16px',borderRadius:'5px',border:'2px solid #ffd700',fontWeight:'bold',cursor:'pointer',fontSize:'12px'}}>INSIDE (5,6,8,9)</button>
-                      <button onClick={()=>placePresetBet('outside')} disabled={!selectedDenomination} style={{background:'#000',color:'#fff',padding:'8px 16px',borderRadius:'5px',border:'2px solid #ffd700',fontWeight:'bold',cursor:'pointer',fontSize:'12px'}}>OUTSIDE (4,10 Buy)</button>
-                      <button onClick={()=>placePresetBet('across')} disabled={!selectedDenomination} style={{background:'#000',color:'#fff',padding:'8px 16px',borderRadius:'5px',border:'2px solid #ffd700',fontWeight:'bold',cursor:'pointer',fontSize:'12px'}}>ACROSS (All)</button>
-                      <button onClick={pullAllBets} disabled={totalOnTable===0} style={{background:'#ff0000',color:'#fff',padding:'8px 16px',borderRadius:'5px',border:'2px solid #fff',fontWeight:'bold',cursor:'pointer',fontSize:'12px'}}>PULL BETS DOWN</button>
-                      <button onClick={()=>setSelectedDenomination(null)} style={{background:'#666',color:'#fff',padding:'8px 16px',borderRadius:'5px',border:'none',fontWeight:'bold',cursor:'pointer',fontSize:'12px'}}>Clear Selection</button>
-                    </div>
+                  <div style={{display:'flex',gap:'6px',justifyContent:'center',flexWrap:'wrap'}}>
+                    {[['inside','Inside'],['outside','Outside'],['across','Across']].map(([k,l])=>(
+                      <button key={k} onClick={()=>placePresetBet(k)} disabled={!selectedDenomination} className="btn"
+                        style={{padding:'8px 16px',borderRadius:'8px',fontSize:'11px',fontWeight:600,letterSpacing:'0.5px',
+                          background:'transparent',color:selectedDenomination?'var(--brass)':'var(--ivory-muted)',border:'1px solid rgba(201,168,76,0.2)'}}>{l}</button>
+                    ))}
+                    <button onClick={pullAllBets} disabled={totOnTable===0} className="btn"
+                      style={{padding:'8px 16px',borderRadius:'8px',fontSize:'11px',fontWeight:600,background:'transparent',color:'var(--loss-red)',border:'1px solid rgba(231,76,60,0.2)'}}>Pull Down</button>
+                    <button onClick={()=>setSelectedDenomination(null)} className="btn"
+                      style={{padding:'8px 16px',borderRadius:'8px',fontSize:'11px',fontWeight:600,background:'transparent',color:'var(--ivory-muted)',border:'1px solid rgba(255,255,255,0.06)'}}>Clear</button>
                   </div>
                 </div>
 
-                <div className="felt-green" style={{borderRadius:'20px',padding:'15px',border:'8px solid #8b4513',boxShadow:'0 8px 24px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.3)',marginBottom:'10px'}}>
-                  <div style={{marginBottom:'10px'}}><BetBox betType="pass" label="PASS LINE" style={{height:'70px',fontSize:'28px',background:'rgba(255,255,255,0.15)',fontWeight:'bold'}}/></div>
-                  <div><BetBox betType="dontpass" label="DON'T PASS BAR 🎲🎲" style={{height:'60px',fontSize:'18px',background:'rgba(255,255,255,0.1)'}}/></div>
+                {/* Pass Line / Don't Pass */}
+                <div className="felt-surface" style={{borderRadius:'12px',padding:'14px',border:'4px solid var(--rail)',boxShadow:'inset 0 1px 10px rgba(0,0,0,0.3)',marginBottom:'10px'}}>
+                  <div style={{marginBottom:'8px'}}><BetBox betType="pass" label="Pass Line" style={{height:'58px',fontSize:'16px'}}/></div>
+                  <BetBox betType="dontpass" label="Don't Pass" sublabel="Bar 12" style={{height:'48px'}}/>
                 </div>
 
-                <div style={{background:'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',color:'#fff',padding:'15px',borderRadius:'10px',boxShadow:'0 4px 12px rgba(0,0,0,0.5)',border:'2px solid #ffd700'}}>
-                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'15px'}}>
-                    <h3 style={{fontWeight:'bold',fontSize:'18px',color:'#ffd700'}}>Players ({gameState.players.length}/6)</h3>
-                    <button onClick={async()=>{if(window.confirm('Reset table? All players and bets will be cleared.')){const ng=initializeGame();await saveToServer(ng);sessionStorage.removeItem('craps-player-id');setPlayerId(null);playerIdRef.current=null;setShowJoinModal(true);}}}
-                      style={{background:'#666',color:'#fff',padding:'8px 15px',borderRadius:'5px',border:'none',fontSize:'12px',cursor:'pointer'}}>Reset</button>
+                {/* Players */}
+                <div style={{background:'var(--bg-card)',padding:'16px',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.04)'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
+                    <div style={{fontSize:'10px',color:'var(--brass)',letterSpacing:'2px',textTransform:'uppercase',fontWeight:600}}>Players · {gameState.players.length}/6</div>
+                    <button onClick={()=>{if(window.confirm('Reset the table?')){const ng=initializeGame();saveGameState(ng);localStorage.removeItem('craps-player-id');setPlayerId(null);setShowJoinModal(true);}}} className="btn"
+                      style={{padding:'4px 12px',borderRadius:'6px',fontSize:'10px',background:'transparent',color:'var(--ivory-muted)',border:'1px solid rgba(255,255,255,0.06)'}}>Reset</button>
                   </div>
-                  <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
-                    {gameState.playerOrder?.map((pid,idx)=>{
-                      const player=gameState.players.find(p=>p.id===pid); if(!player)return null;
-                      return(
-                        <div key={player.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px',borderRadius:'8px',
-                          background:player.id===playerId?'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)':'#333',
-                          color:player.id===playerId?'#000':'#fff',fontWeight:'bold',
-                          border:idx===gameState.currentShooter?'3px solid #ff0000':'none'}}>
-                          <span>{idx===gameState.currentShooter&&'🎲 '}{player.name}{player.id===playerId&&' (YOU)'}</span>
-                          <span style={{fontSize:'18px',color:player.id===playerId?(player.chips>=STARTING_CHIPS?'#00aa00':'#ff0000'):(player.chips>=STARTING_CHIPS?'#00ff00':'#ff6666')}}>${player.chips}</span>
-                        </div>
-                      );
+                  <div style={{display:'flex',flexDirection:'column',gap:'4px'}}>
+                    {gameState.playerOrder?.map((pid,idx)=>{const player=gameState.players.find(p=>p.id===pid);if(!player)return null;const isMe=player.id===playerId;
+                      return(<div key={player.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'10px 14px',borderRadius:'8px',
+                        background:isMe?'rgba(201,168,76,0.06)':'transparent',border:idx===gameState.currentShooter?'1px solid rgba(201,168,76,0.2)':'1px solid transparent'}}>
+                        <span style={{fontSize:'13px',fontWeight:isMe?600:400,color:isMe?'var(--ivory)':'var(--ivory-dim)'}}>
+                          {idx===gameState.currentShooter&&<span style={{color:'var(--brass)',marginRight:'6px'}}>◆</span>}
+                          {player.name}{isMe&&<span style={{fontSize:'10px',color:'var(--brass)',marginLeft:'6px'}}>you</span>}
+                        </span>
+                        <span style={{fontFamily:'var(--font-mono)',fontSize:'14px',fontWeight:700,color:player.chips>=STARTING_CHIPS?'var(--green-win)':'var(--loss-red)'}}>${player.chips}</span>
+                      </div>);
                     })}
                   </div>
+                </div>
+
+                {/* Footer */}
+                <div style={{textAlign:'center',padding:'20px 0',fontSize:'10px',color:'rgba(255,255,255,0.12)',letterSpacing:'2px',textTransform:'uppercase',fontFamily:'var(--font-mono)'}}>
+                  The Ivory Room · Est. 2025
                 </div>
               </div>
             </div>
