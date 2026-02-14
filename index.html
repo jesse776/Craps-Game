@@ -1,553 +1,479 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Ivory Room — Private Craps</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        :root {
-            --bg-deep: #0c0c0e;
-            --bg-card: #161619;
-            --bg-elevated: #1e1e22;
-            --felt: #1a6b35;
-            --felt-mid: #178a3a;
-            --felt-light: #1f9944;
-            --felt-dark: #115a28;
-            --felt-deep: #0d4a1f;
-            --rail: #3d2215;
-            --rail-light: #5a3a28;
-            --rail-edge: #2a1810;
-            --brass: #c9a84c;
-            --brass-dim: #8a7235;
-            --brass-glow: #d4b85a;
-            --ivory: #f0ece4;
-            --ivory-dim: #a8a49c;
-            --ivory-muted: #787470;
-            --red-accent: #c0392b;
-            --red-deep: #8b1a1a;
-            --green-win: #2ecc71;
-            --loss-red: #e74c3c;
-            --chip-white: #e8e4dc;
-            --chip-red: #b83232;
-            --chip-blue: #2a5fa8;
-            --chip-green: #2a8a4a;
-            --chip-orange: #c47a2a;
-            --font-display: 'Cormorant Garamond', Georgia, serif;
-            --font-body: 'DM Sans', system-ui, sans-serif;
-            --font-mono: 'JetBrains Mono', monospace;
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.5);
-            --shadow-lg: 0 8px 32px rgba(0,0,0,0.6);
-            --table-line: rgba(255,255,255,0.35);
-            --table-line-dim: rgba(255,255,255,0.15);
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: var(--font-body); background: var(--bg-deep); color: var(--ivory); overflow-x: hidden; -webkit-font-smoothing: antialiased; }
-        body::before { content:''; position:fixed; inset:0; z-index:9999; pointer-events:none; opacity:0.025;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
-
-        .casino-chip {
-            width: 52px; height: 52px; border-radius: 50%; position: relative;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 700; font-size: 12px; cursor: pointer;
-            transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
-            box-shadow: 0 2px 6px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1);
-            font-family: var(--font-mono);
-        }
-        .casino-chip.small { width: 30px; height: 30px; font-size: 8px; }
-        .casino-chip:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.6); }
-        .casino-chip:active { transform: translateY(0) scale(0.95); }
-        .casino-chip.dragging { opacity: 0.4; }
-        .casino-chip::before { content:''; position:absolute; inset:0; border-radius:50%; padding:3px;
-            background: repeating-conic-gradient(from 0deg, var(--chip-color) 0deg 20deg, rgba(255,255,255,0.7) 20deg 40deg);
-            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; opacity:0.6; }
-        .casino-chip::after { content:''; position:absolute; inset:5px; border-radius:50%;
-            background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.15), transparent 60%); border:1.5px solid var(--chip-color); }
-        .casino-chip.small::after { inset:3px; border-width:1px; }
-        .chip-value { position:relative; z-index:1; color:#1a1a1e; font-weight:700; text-shadow:0 1px 1px rgba(255,255,255,0.4); letter-spacing:-0.5px; }
-        .chip-selected { box-shadow: 0 0 0 3px var(--brass), 0 0 24px rgba(201,168,76,0.3); transform: translateY(-4px); }
-
-        /* Table cell - used for all bet areas on the felt */
-        .tcell {
-            border: 1.5px solid var(--table-line);
-            background: rgba(0,0,0,0.05);
-            cursor: pointer; transition: all 0.15s ease;
-            position: relative; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; padding: 4px 2px;
-            min-height: 40px;
-        }
-        .tcell:hover { background: rgba(255,255,255,0.08); }
-        .tcell.off { opacity: 0.4; }
-        .tcell.off:hover { opacity: 0.55; }
-        .tcell.pass-area { border-color: var(--table-line); background: rgba(0,0,0,0.02); }
-        .tcell.pass-area:hover { background: rgba(255,255,255,0.06); }
-        .tcell-label { color: var(--ivory); font-weight: 700; font-family: var(--font-display); text-transform: uppercase; letter-spacing: 1px; text-shadow: 1px 1px 3px rgba(0,0,0,0.5); text-align: center; line-height: 1.1; position: relative; z-index: 1; }
-        .tcell-sub { color: rgba(255,255,255,0.5); font-size: 9px; font-family: var(--font-mono); margin-top: 1px; position: relative; z-index: 1; }
-        .tcell-off-tag { font-size: 7px; color: rgba(255,255,255,0.35); letter-spacing: 2px; text-transform: uppercase; }
-
-        /* Felt texture */
-        .felt-bg {
-            background: radial-gradient(ellipse at 50% 30%, var(--felt-mid) 0%, var(--felt) 40%, var(--felt-dark) 80%, var(--felt-deep) 100%);
-            position: relative;
-        }
-        .felt-bg::before { content:''; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0.07;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 128 128' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E"); }
-
-        .drop-zone { border:2px dashed rgba(201,168,76,0.3); background:rgba(201,168,76,0.03); border-radius:12px; padding:16px; text-align:center; transition:all 0.3s; }
-        .drop-zone.drag-over { background:rgba(201,168,76,0.1); border-color:var(--brass); }
-
-        .die-face { background:linear-gradient(145deg, #faf8f4, #e8e4dc); box-shadow:0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8); border-radius:10px; border:1px solid rgba(0,0,0,0.08); }
-        .die-pip { width:9px; height:9px; background:#1a1a1a; border-radius:50%; box-shadow:inset 0 1px 2px rgba(0,0,0,0.3); }
-
-        @keyframes fadeUp { from{opacity:0;transform:translateY(20px);} to{opacity:1;transform:translateY(0);} }
-        @keyframes resultReveal { 0%{opacity:0;transform:translate(-50%,-50%) scale(0.8);} 100%{opacity:1;transform:translate(-50%,-50%) scale(1);} }
-        @keyframes dealerSlide { from{opacity:0;transform:translateX(-50%) translateY(-20px);} to{opacity:1;transform:translateX(-50%) translateY(0);} }
-        @keyframes spin { to{transform:rotate(360deg);} }
-        @keyframes pulse-soft { 0%,100%{opacity:0.6;} 50%{opacity:1;} }
-
-        .result-overlay { animation: resultReveal 0.35s cubic-bezier(0.16,1,0.3,1) forwards; }
-        .dealer-banner { animation: dealerSlide 0.3s cubic-bezier(0.16,1,0.3,1) forwards; }
-
-        .puck-marker { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center;
-            font-weight:700; font-size:9px; font-family:var(--font-mono); letter-spacing:1px; box-shadow:var(--shadow-md); }
-        .puck-marker.on { background:var(--ivory); color:var(--bg-deep); }
-        .puck-marker.off { background:var(--bg-deep); color:var(--ivory-dim); border:2px solid rgba(255,255,255,0.15); }
-
-        .btn { border:none; cursor:pointer; font-family:var(--font-body); font-weight:600; transition:all 0.2s ease; }
-        .btn:disabled { opacity:0.4; cursor:not-allowed; }
-
-        /* Bet chip display inside cells */
-        .bet-chips-row { position:absolute; bottom:2px; left:50%; transform:translateX(-50%); display:flex; gap:2px; z-index:3; flex-wrap:wrap; justify-content:center; max-width:100%; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Ivory Room — Private Craps</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+:root {
+  --bg:#0c0c0e;--bg2:#161619;--bg3:#1e1e22;
+  --felt:#1a6b35;--felt2:#178a3a;--felt3:#1f9944;--felt4:#115a28;--felt5:#0d4a1f;
+  --rail:#3d2215;--rail2:#5a3a28;--rail3:#2a1810;
+  --brass:#c9a84c;--brass2:#8a7235;
+  --iv:#f0ece4;--iv2:#a8a49c;--iv3:#787470;
+  --red:#c0392b;--red2:#8b1a1a;--grn:#2ecc71;--lred:#e74c3c;
+  --cw:#e8e4dc;--cr:#b83232;--cb:#2a5fa8;--cg:#2a8a4a;--co:#c47a2a;
+  --fd:'Cormorant Garamond',Georgia,serif;--fb:'DM Sans',system-ui,sans-serif;--fm:'JetBrains Mono',monospace;
+  --tl:rgba(255,255,255,0.35);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:var(--fb);background:linear-gradient(160deg,#0c0c0e 0%,#12121a 40%,#0e0e12 100%);color:var(--iv);overflow-x:hidden;-webkit-font-smoothing:antialiased;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;z-index:9999;pointer-events:none;opacity:0.025;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.felt-bg{background:radial-gradient(ellipse at 50% 30%,var(--felt2) 0%,var(--felt) 40%,var(--felt4) 80%,var(--felt5) 100%);position:relative}
+.felt-bg::before{content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;opacity:0.07;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 128 128' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E")}
+.tc{border:1.5px solid var(--tl);background:rgba(0,0,0,0.05);cursor:pointer;transition:all .15s;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;min-height:40px;overflow:visible}
+.tc:hover{background:rgba(255,255,255,0.08)}.tc.off{opacity:.4}.tc.off:hover{opacity:.55}
+.chip{width:52px;height:52px;border-radius:50%;position:relative;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;cursor:pointer;transition:all .25s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);font-family:var(--fm)}
+.chip:hover{transform:translateY(-3px);box-shadow:0 6px 16px rgba(0,0,0,.6)}.chip:active{transform:translateY(0) scale(.95)}
+.chip::before{content:'';position:absolute;inset:0;border-radius:50%;padding:3px;background:repeating-conic-gradient(from 0deg,var(--cc) 0deg 20deg,rgba(255,255,255,.7) 20deg 40deg);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.5}
+.chip::after{content:'';position:absolute;inset:5px;border-radius:50%;background:radial-gradient(ellipse at 30% 30%,rgba(255,255,255,.15),transparent 60%);border:1.5px solid var(--cc)}
+.chip-sel{box-shadow:0 0 0 3px var(--brass),0 0 24px rgba(201,168,76,.3);transform:translateY(-4px)}
+.die-face{background:linear-gradient(145deg,#faf8f4,#e8e4dc);box-shadow:0 2px 8px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.8);border-radius:10px;border:1px solid rgba(0,0,0,.08)}
+.die-pip{width:9px;height:9px;background:#1a1a1a;border-radius:50%;box-shadow:inset 0 1px 2px rgba(0,0,0,.3)}
+.puck{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:9px;font-family:var(--fm);letter-spacing:1px;box-shadow:0 4px 12px rgba(0,0,0,.5)}
+.puck.on{background:var(--iv);color:var(--bg)}.puck.off{background:var(--bg);color:var(--iv2);border:2px solid rgba(255,255,255,.15)}
+.drop-zone{border:2px dashed rgba(201,168,76,.3);background:rgba(201,168,76,.03);border-radius:12px;padding:16px;text-align:center;transition:all .3s}
+.drop-zone.drag-over{background:rgba(201,168,76,.1);border-color:var(--brass)}
+.btn{border:none;cursor:pointer;font-family:var(--fb);font-weight:600;transition:all .2s}.btn:disabled{opacity:.4;cursor:not-allowed}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes resultReveal{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+@keyframes dealerSlide{from{opacity:0;transform:translateX(-50%) translateY(-20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.result-overlay{animation:resultReveal .35s cubic-bezier(.16,1,.3,1) forwards}
+.dealer-banner{animation:dealerSlide .3s cubic-bezier(.16,1,.3,1) forwards}
+</style>
 </head>
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState, useEffect } = React;
-const SK = 'craps-game-' + (window.location.hash.slice(1) || 'default');
+const {useState,useEffect}=React;
+const SK='craps-game-'+(window.location.hash.slice(1)||'default');
 
-const App = () => {
-  const [gs, setGs] = useState(null);
-  const [pid, setPid] = useState(localStorage.getItem('craps-player-id'));
-  const [pname, setPname] = useState('');
-  const [selDenom, setSelDenom] = useState(null);
-  const [rolling, setRolling] = useState(false);
-  const [dice, setDice] = useState({die1:1,die2:1});
-  const [joinModal, setJoinModal] = useState(!pid);
-  const [msg, setMsg] = useState('');
-  const [dcall, setDcall] = useState('');
-  const [wld, setWld] = useState(null);
-  const [dragging, setDragging] = useState(false);
-  const [dragBet, setDragBet] = useState(null);
+const App=()=>{
+const [gs,setGs]=useState(null);
+const [pid,setPid]=useState(localStorage.getItem('craps-pid'));
+const [pname,setPname]=useState('');
+const [selD,setSelD]=useState(null);
+const [rolling,setRolling]=useState(false);
+const [dice,setDice]=useState({d1:1,d2:1});
+const [joinM,setJoinM]=useState(!pid);
+const [msg,setMsg]=useState('');
+const [dcall,setDcall]=useState('');
+const [wld,setWld]=useState(null);
+const [dragOn,setDragOn]=useState(false);
+const [dragBt,setDragBt]=useState(null);
 
-  const CHIPS = [
-    {value:1,color:'var(--chip-white)'},{value:5,color:'var(--chip-red)'},{value:10,color:'var(--chip-blue)'},
-    {value:25,color:'var(--chip-green)'},{value:50,color:'var(--chip-orange)'}
-  ];
-  const TMIN=15, PMIN=1, START=250, MAXP=6;
+const CV=[{v:1,c:'var(--cw)'},{v:5,c:'var(--cr)'},{v:10,c:'var(--cb)'},{v:25,c:'var(--cg)'},{v:50,c:'var(--co)'}];
+const TMIN=15,PMIN=1,START=250,MAXP=6;
 
-  useEffect(()=>{const iv=setInterval(load,1000);load();return()=>clearInterval(iv);},[]);
+useEffect(()=>{const iv=setInterval(ld,1000);ld();return()=>clearInterval(iv)},[]);
 
-  const load=()=>{try{const s=localStorage.getItem(SK);if(s){const st=JSON.parse(s);setGs(st);if(st.lastDice)setDice(st.lastDice);if(st.lastDealerCall)setDcall(st.lastDealerCall);}else{const n=init();localStorage.setItem(SK,JSON.stringify(n));setGs(n);}}catch(e){console.error(e);}};
-  const init=()=>({players:[],playerOrder:[],currentShooter:0,point:null,phase:'comeout',lastDice:null,lastTotal:null,lastDealerCall:'',bets:{},comeBets:{},dontComeBets:{},gameId:Date.now()});
-  const save=(s)=>{try{localStorage.setItem(SK,JSON.stringify(s));setGs(s);}catch(e){}};
-  const fresh=()=>{try{const s=localStorage.getItem(SK);return s?JSON.parse(s):gs;}catch(e){return gs;}};
-  const flash=(m)=>{setMsg(m);setTimeout(()=>setMsg(''),4000);};
-  const chipFor=(a)=>{for(let i=CHIPS.length-1;i>=0;i--){if(a>=CHIPS[i].value)return CHIPS[i];}return CHIPS[0];};
+const ld=()=>{try{const s=localStorage.getItem(SK);if(s){const st=JSON.parse(s);setGs(st);if(st.lastDice)setDice(st.lastDice);if(st.lastDC)setDcall(st.lastDC)}else{const n=ini();localStorage.setItem(SK,JSON.stringify(n));setGs(n)}}catch(e){}};
+const ini=()=>({players:[],po:[],cs:0,point:null,phase:'comeout',lastDice:null,lastTotal:null,lastDC:'',bets:{},cb:{},dcb:{},gid:Date.now()});
+const sv=(s)=>{try{localStorage.setItem(SK,JSON.stringify(s));setGs(s)}catch(e){}};
+const fr=()=>{try{const s=localStorage.getItem(SK);return s?JSON.parse(s):gs}catch(e){return gs}};
+const fl=(m)=>{setMsg(m);setTimeout(()=>setMsg(''),4000)};
+const cFor=(a)=>{for(let i=CV.length-1;i>=0;i--){if(a>=CV[i].v)return CV[i]}return CV[0]};
 
-  const dealerCall=(tot,phase,pt,d1,d2)=>{const h=d1===d2;const c={
-    2:["Snake eyes","Aces"],3:["Ace deuce","Craps"],4:h?["Hard four","Little Joe"]:["Easy four"],5:["Fever five"],
-    6:h?["Hard six"]:["Easy six"],7:phase==='comeout'?["Winner seven","Front line winner"]:["Seven out","Line away"],
-    8:h?["Hard eight"]:["Easy eight"],9:["Center field","Nina"],10:h?["Hard ten"]:["Easy ten"],
-    11:["Yo-eleven","Yo"],12:["Boxcars","Midnight"]};const o=c[tot]||[tot+''];return o[Math.floor(Math.random()*o.length)];};
+const getDC=(tot,phase,pt,d1,d2)=>{const h=d1===d2;const c={
+2:['Snake eyes','Aces'],3:['Ace deuce','Craps'],4:h?['Hard four','Little Joe']:['Easy four'],5:['Fever five'],
+6:h?['Hard six']:['Easy six'],7:phase==='comeout'?['Winner seven','Front line winner']:['Seven out','Line away'],
+8:h?['Hard eight']:['Easy eight'],9:['Center field','Nina'],10:h?['Hard ten']:['Easy ten'],
+11:['Yo-eleven','Yo'],12:['Boxcars','Midnight']};const o=c[tot]||[tot+''];return o[Math.floor(Math.random()*o.length)]};
 
-  const join=()=>{if(!pname.trim()){flash('Enter your name');return;}const cg=gs||init();if(cg.players.length>=MAXP){flash('Table full');return;}
-    const np='p_'+Date.now()+'_'+Math.random().toString(36).substr(2,6);
-    const pl={id:np,name:pname.trim(),chips:START,joinedAt:Date.now()};
-    save({...cg,players:[...cg.players,pl],playerOrder:[...(cg.playerOrder||[]),np],bets:{...cg.bets,[np]:{}},comeBets:{...(cg.comeBets||{}),[np]:[]},dontComeBets:{...(cg.dontComeBets||{}),[np]:[]}});
-    setPid(np);localStorage.setItem('craps-player-id',np);setJoinModal(false);flash('Welcome, '+pname);};
+const join=()=>{
+if(!pname.trim()){fl('Enter your name');return}
+const cg=gs||ini();if(cg.players.length>=MAXP){fl('Table full');return}
+const np='p_'+Date.now()+'_'+Math.random().toString(36).substr(2,6);
+const pl={id:np,name:pname.trim(),chips:START};
+sv({...cg,players:[...cg.players,pl],po:[...(cg.po||[]),np],bets:{...cg.bets,[np]:{}},cb:{...(cg.cb||{}),[np]:[]},dcb:{...(cg.dcb||{}),[np]:[]}});
+setPid(np);localStorage.setItem('craps-pid',np);setJoinM(false);fl('Welcome, '+pname)};
 
-  const rebuy=()=>{const p=gs.players.find(p=>p.id===pid);if(!p)return;save({...gs,players:gs.players.map(p=>p.id===pid?{...p,chips:p.chips+START}:p)});flash('+$'+START);};
+const rebuy=()=>{sv({...gs,players:gs.players.map(p=>p.id===pid?{...p,chips:p.chips+START}:p)});fl('+$'+START)};
+const mxO=(pt,b)=>{if(pt===4||pt===10)return b*3;if(pt===5||pt===9)return b*4;if(pt===6||pt===8)return b*5;return 0};
 
-  const maxOdds=(pt,b)=>{if(pt===4||pt===10)return b*3;if(pt===5||pt===9)return b*4;if(pt===6||pt===8)return b*5;return 0;};
+const placeBet=(bt,bl,amt)=>{
+if(!selD&&!amt){fl('Select denomination');return}
+const ba=amt||selD;const fs=fr();
+const pl=fs.players.find(p=>p.id===pid);if(!pl)return;
+if(pl.chips<ba){fl('Insufficient chips');return}
+if(bt==='passodds'&&fs.point){const plb=fs.bets[pid]?.pass||0;if(!plb){fl('Pass bet first');return}if((fs.bets[pid]?.passodds||0)+ba>mxO(fs.point,plb)){fl('Max odds');return}}
+if(bt==='dontpassodds'&&fs.point){const dpb=fs.bets[pid]?.dontpass||0;if(!dpb){fl('DP bet first');return}if((fs.bets[pid]?.dontpassodds||0)+ba>mxO(fs.point,dpb)){fl('Max odds');return}}
+if(['pass','dontpass'].includes(bt)){const cur=(fs.bets[pid]||{})[bt]||0;if(cur===0&&ba<TMIN){fl('Min $'+TMIN);return}}
+if(['come','dontcome'].includes(bt)){const cur=(fs.bets[pid]||{})[bt]||0;if(cur===0&&ba<TMIN){fl('Min $'+TMIN);return}}
+if(ba<PMIN){fl('Min $'+PMIN);return}
+if(fs.phase==='point'&&['pass','dontpass'].includes(bt)&&!(fs.bets[pid]||{})[bt]){fl('Come out only');return}
+if(['come','dontcome'].includes(bt)&&fs.phase!=='point'){fl('Point phase only');return}
+if(['passodds','dontpassodds'].includes(bt)&&!fs.point){fl('No point set');return}
+const up=fs.players.map(p=>p.id===pid?{...p,chips:p.chips-ba}:p);
+const cb=fs.bets[pid]||{};
+sv({...fs,players:up,bets:{...fs.bets,[pid]:{...cb,[bt]:(cb[bt]||0)+ba}}});
+fl('$'+ba+' '+bl)};
 
-  const placeBet=(bt,bl,amt)=>{
-    if(!selDenom&&!amt){flash('Select denomination');return;}const ba=amt||selDenom;const fs=fresh();
-    const pl=fs.players.find(p=>p.id===pid);if(!pl)return;if(pl.chips<ba){flash('Insufficient chips');return;}
-    if(bt==='passodds'&&fs.point){const plb=fs.bets[pid]?.pass||0;if(!plb){flash('Pass bet first');return;}if((fs.bets[pid]?.passodds||0)+ba>maxOdds(fs.point,plb)){flash('Max odds exceeded');return;}}
-    if(bt==='dontpassodds'&&fs.point){const dpb=fs.bets[pid]?.dontpass||0;if(!dpb){flash('DP bet first');return;}if((fs.bets[pid]?.dontpassodds||0)+ba>maxOdds(fs.point,dpb)){flash('Max odds exceeded');return;}}
-    if(['pass','dontpass'].includes(bt)&&ba<TMIN){const cur=(fs.bets[pid]||{})[bt]||0;if(cur===0){flash('Min $'+TMIN+' on first bet');return;}}
-    if(['come','dontcome'].includes(bt)&&ba<TMIN){const cur=(fs.bets[pid]||{})[bt]||0;if(cur===0){flash('Min $'+TMIN+' on first bet');return;}}
-    if(ba<PMIN){flash('Min $'+PMIN);return;}
-    if(fs.phase==='point'&&['pass','dontpass'].includes(bt)&&!(fs.bets[pid]||{})[bt]){flash('Come out only');return;}
-    if(['come','dontcome'].includes(bt)&&fs.phase!=='point'){flash('Point phase only');return;}
-    const up=fs.players.map(p=>p.id===pid?{...p,chips:p.chips-ba}:p);const cb=fs.bets[pid]||{};
-    save({...fs,players:up,bets:{...fs.bets,[pid]:{...cb,[bt]:(cb[bt]||0)+ba}}});flash('$'+ba+' '+bl);};
+const rmBet=(bt)=>{const fs=fr();if(['pass','dontpass'].includes(bt)&&fs.phase==='point'){fl('Contract bet');return}
+const cb=fs.bets[pid]||{};const ba=cb[bt];if(!ba)return;
+const nb={...cb};delete nb[bt];
+sv({...fs,players:fs.players.map(p=>p.id===pid?{...p,chips:p.chips+ba}:p),bets:{...fs.bets,[pid]:nb}});fl('-$'+ba)};
 
-  const removeBet=(bt)=>{const fs=fresh();if(['pass','dontpass'].includes(bt)&&fs.phase==='point'){flash('Contract bet');return;}const cb=fs.bets[pid]||{},ba=cb[bt];if(!ba)return;
-    const{[bt]:_,...rest}=cb;save({...fs,players:fs.players.map(p=>p.id===pid?{...p,chips:p.chips+ba}:p),bets:{...fs.bets,[pid]:rest}});flash('-$'+ba);};
+const pullAll=()=>{const fs=fr();const cb=fs.bets[pid]||{};let pull={...cb},kept={};
+if(fs.phase==='point'){if(cb.pass){kept.pass=cb.pass;delete pull.pass}if(cb.dontpass){kept.dontpass=cb.dontpass;delete pull.dontpass}}
+const t=Object.values(pull).reduce((s,b)=>s+b,0);if(!t){fl('Nothing to pull');return}
+sv({...fs,players:fs.players.map(p=>p.id===pid?{...p,chips:p.chips+t}:p),bets:{...fs.bets,[pid]:kept}});fl('Pulled $'+t)};
 
-  const pullAll=()=>{const fs=fresh();const cb=fs.bets[pid]||{};let pull={...cb},kept={};
-    if(fs.phase==='point'){if(cb.pass){kept.pass=cb.pass;delete pull.pass;}if(cb.dontpass){kept.dontpass=cb.dontpass;delete pull.dontpass;}}
-    const t=Object.values(pull).reduce((s,b)=>s+b,0);if(!t){flash('Nothing to pull');return;}
-    save({...fs,players:fs.players.map(p=>p.id===pid?{...p,chips:p.chips+t}:p),bets:{...fs.bets,[pid]:kept}});flash('Pulled $'+t);};
+const preset=(type)=>{const fs=fr();const pl=fs.players.find(p=>p.id===pid);
+if(!pl||!selD){fl('Select denomination');return}
+const csid=fs.po[fs.cs],isCS=pid===csid,pt=fs.point,mb=fs.bets[pid]||{},hasPL=mb.pass>0;
+let btp=[];
+const sk=(n)=>{return pt&&(isCS||hasPL)&&n===pt};
+if(type==='inside'){[5,6,8,9].forEach(n=>{if(!sk(n)){btp.push('place'+n)}});}
+else if(type==='outside'){[4,10].forEach(n=>{if(!sk(n)){btp.push('buy'+n)}});}
+else if(type==='across'){[4,5,6,8,9,10].forEach(n=>{if(!sk(n)){btp.push((n===4||n===10?'buy':'place')+n)}});}
+if(!btp.length){fl('All covered');return}
+const tc=selD*btp.length;if(pl.chips<tc){fl('Need $'+tc);return}
+const up=fs.players.map(p=>p.id===pid?{...p,chips:p.chips-tc}:p);
+const nb={...mb};btp.forEach(b=>{nb[b]=(nb[b]||0)+selD});
+sv({...fs,players:up,bets:{...fs.bets,[pid]:nb}});fl(type+': $'+tc)};
 
-  const preset=(type)=>{const fs=fresh();const pl=fs.players.find(p=>p.id===pid);if(!pl||!selDenom){flash('Select denomination');return;}
-    const csid=fs.playerOrder[fs.currentShooter],isCS=pid===csid,pt=fs.point,mb=fs.bets[pid]||{},hasPL=mb.pass>0;let btp=[];
-    const sk=(n)=>{return pt && (isCS||hasPL) && n===pt;};
-    if(type==='inside'){[5,6,8,9].forEach(n=>{if(!sk(n))btp.push({t:'place'+n});});}
-    else if(type==='outside'){[4,10].forEach(n=>{if(!sk(n))btp.push({t:'buy'+n});});}
-    else if(type==='across'){[4,5,6,8,9,10].forEach(n=>{if(!sk(n))btp.push({t:(n===4||n===10?'buy':'place')+n});});}
-    if(!btp.length){flash('All covered');return;}const tc=selDenom*btp.length;if(pl.chips<tc){flash('Need $'+tc);return;}
-    const up=fs.players.map(p=>p.id===pid?{...p,chips:p.chips-tc}:p);const nb={...mb};btp.forEach(b=>{nb[b.t]=(nb[b.t]||0)+selDenom;});
-    save({...fs,players:up,bets:{...fs.bets,[pid]:nb}});flash(type+': $'+tc);};
+const totOT=()=>{if(!pid||!gs)return 0;const mb=gs.bets[pid]||{};let t=Object.values(mb).reduce((s,b)=>s+b,0);
+((gs.cb||{})[pid]||[]).forEach(c=>{t+=c.amount});((gs.dcb||{})[pid]||[]).forEach(c=>{t+=c.amount});return t};
 
-  const totalOnTable=()=>{if(!pid||!gs)return 0;const mb=gs.bets[pid]||{};let t=Object.values(mb).reduce((s,b)=>s+b,0);
-    ((gs.comeBets||{})[pid]||[]).forEach(cb=>{t+=cb.amount;});((gs.dontComeBets||{})[pid]||[]).forEach(cb=>{t+=cb.amount;});return t;};
+const doRoll=async()=>{if(rolling)return;const fs=fr();const sid=fs.po[fs.cs];if(sid!==pid){fl('Not your roll');return}
+setRolling(true);setMsg('');setDcall('');
+for(let i=0;i<12;i++){setDice({d1:Math.floor(Math.random()*6)+1,d2:Math.floor(Math.random()*6)+1});await new Promise(r=>setTimeout(r,65))}
+const d1=Math.floor(Math.random()*6)+1,d2=Math.floor(Math.random()*6)+1,tot=d1+d2;
+setDice({d1,d2});const call=getDC(tot,fs.phase,fs.point,d1,d2);setDcall(call);
+await new Promise(r=>setTimeout(r,500));proc(fs,d1,d2,tot,call);setRolling(false)};
 
-  const roll=async()=>{if(rolling)return;const fs=fresh();const sid=fs.playerOrder[fs.currentShooter];if(sid!==pid){flash('Not your roll');return;}
-    setRolling(true);setMsg('');setDcall('');
-    for(let i=0;i<12;i++){setDice({die1:Math.floor(Math.random()*6)+1,die2:Math.floor(Math.random()*6)+1});await new Promise(r=>setTimeout(r,65));}
-    const d1=Math.floor(Math.random()*6)+1,d2=Math.floor(Math.random()*6)+1,tot=d1+d2;
-    setDice({die1:d1,die2:d2});const call=dealerCall(tot,fs.phase,fs.point,d1,d2);setDcall(call);
-    await new Promise(r=>setTimeout(r,500));processRoll(fs,d1,d2,tot,call);setRolling(false);};
+const proc=(g,d1,d2,tot,call)=>{
+let u={...g,lastDice:{d1,d2},lastTotal:tot,lastDC:call,cb:JSON.parse(JSON.stringify(g.cb||{})),dcb:JSON.parse(JSON.stringify(g.dcb||{}))};
+const pay={},loss={};let ms=[],so=false;
+g.players.forEach(p=>{pay[p.id]=0;loss[p.id]=0});
 
-  const processRoll=(g,d1,d2,tot,call)=>{
-    let u={...g,lastDice:{die1:d1,die2:d2},lastTotal:tot,lastDealerCall:call,comeBets:JSON.parse(JSON.stringify(g.comeBets||{})),dontComeBets:JSON.parse(JSON.stringify(g.dontComeBets||{}))};
-    const pay={},loss={};let ms=[],so=false;g.players.forEach(p=>{pay[p.id]=0;loss[p.id]=0;});
-    // One-roll
-    g.players.forEach(p=>{const b=g.bets[p.id]||{};
-      if(b.field){if([2,3,4,9,10,11,12].includes(tot)){pay[p.id]+=(tot===2||tot===12)?b.field*2:b.field;}else loss[p.id]+=b.field;}
-      if(b.horn){if([2,3,11,12].includes(tot)){const h=b.horn/4;pay[p.id]+=(tot===2||tot===12)?h*30:h*15;loss[p.id]+=h*3;}else loss[p.id]+=b.horn;}
-      if(b.anyCraps){if([2,3,12].includes(tot))pay[p.id]+=b.anyCraps*7;else loss[p.id]+=b.anyCraps;}
-      if(b.ce){if([2,3,12].includes(tot)){const h=b.ce/2;pay[p.id]+=h*7;loss[p.id]+=h;}else if(tot===11){const h=b.ce/2;pay[p.id]+=h*15;loss[p.id]+=h;}else loss[p.id]+=b.ce;}
-      if(b.anySeven){if(tot===7)pay[p.id]+=b.anySeven*4;else loss[p.id]+=b.anySeven;}
-    });u.bets=clr(g.bets,['field','horn','anyCraps','ce','anySeven']);
-    // Pass/DP
-    if(g.phase==='comeout'){
-      if(tot===7||tot===11){ms.push('Natural \u2014 Pass wins');g.players.forEach(p=>{const b=g.bets[p.id]||{};if(b.pass)pay[p.id]+=b.pass;if(b.dontpass)loss[p.id]+=b.dontpass;});u.bets=clr(u.bets,['pass','dontpass']);}
-      else if([2,3,12].includes(tot)){ms.push('Craps');g.players.forEach(p=>{const b=g.bets[p.id]||{};if(b.pass)loss[p.id]+=b.pass;if(b.dontpass&&tot!==12)pay[p.id]+=b.dontpass;});u.bets=clr(u.bets,tot===12?['pass']:['pass','dontpass']);}
-      else{ms.push('Point is '+tot);u.point=tot;u.phase='point';}
-    } else {
-      if(tot===7){so=true;ms.push('Seven out');g.players.forEach(p=>{const b=g.bets[p.id]||{};
-        if(b.pass)loss[p.id]+=b.pass;if(b.passodds)loss[p.id]+=b.passodds;if(b.dontpass)pay[p.id]+=b.dontpass;if(b.dontpassodds)pay[p.id]+=dpow(g.point,b.dontpassodds);
-        [4,5,6,8,9,10].forEach(n=>{if(b['place'+n])loss[p.id]+=b['place'+n];if(b['buy'+n])loss[p.id]+=b['buy'+n];});
-        [4,6,8,10].forEach(n=>{if(b['hard'+n])loss[p.id]+=b['hard'+n];});
-        if(b.come)pay[p.id]+=b.come;if(b.dontcome)loss[p.id]+=b.dontcome;
-        (u.comeBets[p.id]||[]).forEach(cb=>{loss[p.id]+=cb.amount;});u.comeBets[p.id]=[];
-        (u.dontComeBets[p.id]||[]).forEach(cb=>{pay[p.id]+=cb.amount;});u.dontComeBets[p.id]=[];
-      });u.point=null;u.phase='comeout';u.currentShooter=(g.currentShooter+1)%g.playerOrder.length;u.bets={};}
-      else if(tot===g.point){ms.push('Point made');g.players.forEach(p=>{const b=g.bets[p.id]||{};
-        if(b.pass)pay[p.id]+=b.pass;if(b.passodds)pay[p.id]+=ow(g.point,b.passodds);if(b.dontpass)loss[p.id]+=b.dontpass;if(b.dontpassodds)loss[p.id]+=b.dontpassodds;});
-        const kp={};g.players.forEach(p=>{const b=g.bets[p.id]||{};kp[p.id]={};[4,5,6,8,9,10].forEach(n=>{if(b['place'+n])kp[p.id]['place'+n]=b['place'+n];if(b['buy'+n])kp[p.id]['buy'+n]=b['buy'+n];});
-          [4,6,8,10].forEach(n=>{if(b['hard'+n])kp[p.id]['hard'+n]=b['hard'+n];});if(b.come)kp[p.id].come=b.come;if(b.dontcome)kp[p.id].dontcome=b.dontcome;});
-        u.point=null;u.phase='comeout';u.bets=kp;}
-    }
-    // Come/DC
-    if(g.phase==='point'&&!so){g.players.forEach(p=>{const b=g.bets[p.id]||{};
-      if(b.come){if(tot===7||tot===11){pay[p.id]+=b.come;if(u.bets[p.id])delete u.bets[p.id].come;}else if([2,3,12].includes(tot)){loss[p.id]+=b.come;if(u.bets[p.id])delete u.bets[p.id].come;}
-        else{if(!u.comeBets[p.id])u.comeBets[p.id]=[];const ex=u.comeBets[p.id].find(x=>x.number===tot);if(ex)ex.amount+=b.come;else u.comeBets[p.id].push({number:tot,amount:b.come});if(u.bets[p.id])delete u.bets[p.id].come;}}
-      if(b.dontcome){if(tot===7||tot===11){loss[p.id]+=b.dontcome;if(u.bets[p.id])delete u.bets[p.id].dontcome;}else if(tot===2||tot===3){pay[p.id]+=b.dontcome;if(u.bets[p.id])delete u.bets[p.id].dontcome;}
-        else if(tot!==12){if(!u.dontComeBets[p.id])u.dontComeBets[p.id]=[];const ex=u.dontComeBets[p.id].find(x=>x.number===tot);if(ex)ex.amount+=b.dontcome;else u.dontComeBets[p.id].push({number:tot,amount:b.dontcome});if(u.bets[p.id])delete u.bets[p.id].dontcome;}}
-      (u.comeBets[p.id]||[]).slice().forEach(cb=>{if(tot===cb.number){pay[p.id]+=cb.amount;u.comeBets[p.id]=u.comeBets[p.id].filter(x=>x!==cb);}});
-      (u.dontComeBets[p.id]||[]).slice().forEach(cb=>{if(tot===cb.number){loss[p.id]+=cb.amount;u.dontComeBets[p.id]=u.dontComeBets[p.id].filter(x=>x!==cb);}});
-    });}
-    if(g.phase==='point'&&!so&&[4,5,6,8,9,10].includes(tot)){g.players.forEach(p=>{const b=g.bets[p.id]||{};if(b['place'+tot])pay[p.id]+=plw(tot,b['place'+tot]);});}
-    if(g.phase==='point'&&!so&&[4,5,6,8,9,10].includes(tot)){g.players.forEach(p=>{const b=g.bets[p.id]||{};if(b['buy'+tot]){const tw=byw(tot,b['buy'+tot]);pay[p.id]+=(tw-Math.ceil(tw*0.05));}});}
-    if(g.phase==='point'&&!so){[4,6,8,10].forEach(hn=>{if(tot===hn&&d1===d2){g.players.forEach(p=>{const b=g.bets[p.id]||{};if(b['hard'+hn])pay[p.id]+=hw(hn,b['hard'+hn]);});}
-      else if(tot===hn){g.players.forEach(p=>{const b=g.bets[p.id]||{};if(b['hard'+hn])loss[p.id]+=b['hard'+hn];});u.bets=clr(u.bets,['hard'+hn]);}});}
-    u.players=g.players.map(p=>({...p,chips:p.chips+(pay[p.id]||0)}));save(u);
-    const mn=(pay[pid]||0)-(loss[pid]||0);
-    if(mn>0){setWld({playerId:pid,amount:mn,type:'win'});setTimeout(()=>setWld(null),3000);}
-    else if(mn<0){setWld({playerId:pid,amount:Math.abs(mn),type:'loss'});setTimeout(()=>setWld(null),3000);}
-    if(ms.length)flash(ms.join(' · '));};
+// One-roll bets
+g.players.forEach(p=>{const b=g.bets[p.id]||{};
+if(b.field){if([2,3,4,9,10,11,12].includes(tot)){pay[p.id]+=(tot===2||tot===12)?b.field*2:b.field}else{loss[p.id]+=b.field}}
+if(b.horn){if([2,3,11,12].includes(tot)){const h=b.horn/4;pay[p.id]+=(tot===2||tot===12)?h*30:h*15;loss[p.id]+=h*3}else{loss[p.id]+=b.horn}}
+if(b.anyCraps){if([2,3,12].includes(tot)){pay[p.id]+=b.anyCraps*7}else{loss[p.id]+=b.anyCraps}}
+if(b.ce){if([2,3,12].includes(tot)){const h=b.ce/2;pay[p.id]+=h*7;loss[p.id]+=h}else if(tot===11){const h=b.ce/2;pay[p.id]+=h*15;loss[p.id]+=h}else{loss[p.id]+=b.ce}}
+if(b.anySeven){if(tot===7){pay[p.id]+=b.anySeven*4}else{loss[p.id]+=b.anySeven}}
+});
+u.bets=clr(g.bets,['field','horn','anyCraps','ce','anySeven']);
 
-  const clr=(bets,types)=>{const nb={};Object.keys(bets).forEach(p=>{nb[p]={};Object.keys(bets[p]||{}).forEach(bt=>{if(!types.includes(bt))nb[p][bt]=bets[p][bt];});});return nb;};
-  const ow=(pt,b)=>{if(pt===4||pt===10)return b*2;if(pt===5||pt===9)return b*1.5;if(pt===6||pt===8)return b*1.2;return 0;};
-  const dpow=(pt,b)=>{if(pt===4||pt===10)return b*0.5;if(pt===5||pt===9)return b*(2/3);if(pt===6||pt===8)return b*(5/6);return 0;};
-  const plw=(n,b)=>{if(n===4||n===10)return Math.floor(b*(9/5));if(n===5||n===9)return Math.floor(b*(7/5));if(n===6||n===8)return Math.floor(b*(7/6));return 0;};
-  const byw=(n,b)=>{if(n===4||n===10)return b*2;if(n===5||n===9)return b*1.5;if(n===6||n===8)return b*1.2;return 0;};
-  const hw=(n,b)=>{if(n===4||n===10)return b*7;if(n===6||n===8)return b*9;return 0;};
+// Pass / Don't Pass
+if(g.phase==='comeout'){
+if(tot===7||tot===11){ms.push('Natural — Pass wins');g.players.forEach(p=>{const b=g.bets[p.id]||{};if(b.pass)pay[p.id]+=b.pass;if(b.dontpass)loss[p.id]+=b.dontpass});u.bets=clr(u.bets,['pass','dontpass'])}
+else if([2,3,12].includes(tot)){ms.push('Craps');g.players.forEach(p=>{const b=g.bets[p.id]||{};if(b.pass)loss[p.id]+=b.pass;if(b.dontpass&&tot!==12)pay[p.id]+=b.dontpass});u.bets=clr(u.bets,tot===12?['pass']:['pass','dontpass'])}
+else{ms.push('Point is '+tot);u.point=tot;u.phase='point'}
+} else {
+if(tot===7){so=true;ms.push('Seven out');g.players.forEach(p=>{const b=g.bets[p.id]||{};
+if(b.pass)loss[p.id]+=b.pass;if(b.passodds)loss[p.id]+=b.passodds;
+if(b.dontpass)pay[p.id]+=b.dontpass;if(b.dontpassodds)pay[p.id]+=dpow(g.point,b.dontpassodds);
+[4,5,6,8,9,10].forEach(n=>{if(b['place'+n])loss[p.id]+=b['place'+n];if(b['buy'+n])loss[p.id]+=b['buy'+n]});
+[4,6,8,10].forEach(n=>{if(b['hard'+n])loss[p.id]+=b['hard'+n]});
+if(b.come)pay[p.id]+=b.come;if(b.dontcome)loss[p.id]+=b.dontcome;
+(u.cb[p.id]||[]).forEach(c=>{loss[p.id]+=c.amount});u.cb[p.id]=[];
+(u.dcb[p.id]||[]).forEach(c=>{pay[p.id]+=c.amount});u.dcb[p.id]=[];
+});u.point=null;u.phase='comeout';u.cs=(g.cs+1)%g.po.length;u.bets={}}
+else if(tot===g.point){ms.push('Point made');g.players.forEach(p=>{const b=g.bets[p.id]||{};
+if(b.pass)pay[p.id]+=b.pass;if(b.passodds)pay[p.id]+=ow(g.point,b.passodds);
+if(b.dontpass)loss[p.id]+=b.dontpass;if(b.dontpassodds)loss[p.id]+=b.dontpassodds});
+const kp={};g.players.forEach(p=>{const b=g.bets[p.id]||{};kp[p.id]={};
+[4,5,6,8,9,10].forEach(n=>{if(b['place'+n])kp[p.id]['place'+n]=b['place'+n];if(b['buy'+n])kp[p.id]['buy'+n]=b['buy'+n]});
+[4,6,8,10].forEach(n=>{if(b['hard'+n])kp[p.id]['hard'+n]=b['hard'+n]});
+if(b.come)kp[p.id].come=b.come;if(b.dontcome)kp[p.id].dontcome=b.dontcome});
+u.point=null;u.phase='comeout';u.bets=kp}
+}
 
-  // Sub-components
-  const Chip=({ci,onClick,disabled,selected,small,isDrag,onDS,onDE})=>{
-    const[dr,setDr]=useState(false);
-    return(<div className={'casino-chip'+(small?' small':'')+(selected?' chip-selected':'')+(dr?' dragging':'')}
-      style={{'--chip-color':ci.color,opacity:disabled?0.3:1,cursor:disabled?'not-allowed':(isDrag?'grab':'pointer'),background:ci.color}}
-      onClick={()=>!disabled&&onClick&&onClick(ci)} draggable={isDrag&&!disabled}
-      onDragStart={e=>{if(isDrag&&!disabled&&onDS){setDr(true);onDS(e);}}} onDragEnd={e=>{setDr(false);if(onDE)onDE(e);}}
-    ><span className="chip-value">${ci.value}</span></div>);
-  };
+// Come / Don't Come
+if(g.phase==='point'&&!so){g.players.forEach(p=>{const b=g.bets[p.id]||{};
+if(b.come){
+if(tot===7||tot===11){pay[p.id]+=b.come;if(u.bets[p.id])delete u.bets[p.id].come}
+else if([2,3,12].includes(tot)){loss[p.id]+=b.come;if(u.bets[p.id])delete u.bets[p.id].come}
+else{if(!u.cb[p.id])u.cb[p.id]=[];const ex=u.cb[p.id].find(x=>x.number===tot);if(ex)ex.amount+=b.come;else u.cb[p.id].push({number:tot,amount:b.come});if(u.bets[p.id])delete u.bets[p.id].come}}
+if(b.dontcome){
+if(tot===7||tot===11){loss[p.id]+=b.dontcome;if(u.bets[p.id])delete u.bets[p.id].dontcome}
+else if(tot===2||tot===3){pay[p.id]+=b.dontcome;if(u.bets[p.id])delete u.bets[p.id].dontcome}
+else if(tot!==12){if(!u.dcb[p.id])u.dcb[p.id]=[];const ex=u.dcb[p.id].find(x=>x.number===tot);if(ex)ex.amount+=b.dontcome;else u.dcb[p.id].push({number:tot,amount:b.dontcome});if(u.bets[p.id])delete u.bets[p.id].dontcome}}
+(u.cb[p.id]||[]).slice().forEach(c=>{if(tot===c.number){pay[p.id]+=c.amount;u.cb[p.id]=u.cb[p.id].filter(x=>x!==c)}});
+(u.dcb[p.id]||[]).slice().forEach(c=>{if(tot===c.number){loss[p.id]+=c.amount;u.dcb[p.id]=u.dcb[p.id].filter(x=>x!==c)}});
+})}
 
-  const Die=({value})=>{
-    const dp={1:[[50,50]],2:[[25,25],[75,75]],3:[[25,25],[50,50],[75,75]],4:[[25,25],[25,75],[75,25],[75,75]],5:[[25,25],[25,75],[50,50],[75,25],[75,75]],6:[[25,25],[25,50],[25,75],[75,25],[75,50],[75,75]]};
-    return(<div className="die-face" style={{width:68,height:68,position:'relative'}}>{dp[value].map((p,i)=>(<div key={i} className="die-pip" style={{position:'absolute',left:p[0]+'%',top:p[1]+'%',transform:'translate(-50%,-50%)'}}/>))}</div>);
-  };
+// Place bets
+if(g.phase==='point'&&!so&&[4,5,6,8,9,10].includes(tot)){g.players.forEach(p=>{const b=g.bets[p.id]||{};if(b['place'+tot])pay[p.id]+=plw(tot,b['place'+tot])})}
+// Buy bets with 5% vig
+if(g.phase==='point'&&!so&&[4,5,6,8,9,10].includes(tot)){g.players.forEach(p=>{const b=g.bets[p.id]||{};if(b['buy'+tot]){const tw=byw(tot,b['buy'+tot]);pay[p.id]+=(tw-Math.ceil(tw*0.05))}})}
+// Hardways
+if(g.phase==='point'&&!so){[4,6,8,10].forEach(hn=>{
+if(tot===hn&&d1===d2){g.players.forEach(p=>{const b=g.bets[p.id]||{};if(b['hard'+hn])pay[p.id]+=hw(hn,b['hard'+hn])})}
+else if(tot===hn){g.players.forEach(p=>{const b=g.bets[p.id]||{};if(b['hard'+hn])loss[p.id]+=b['hard'+hn]});u.bets=clr(u.bets,['hard'+hn])}
+})}
 
-  // Bet stack: chip icon + $amount + player name
-  const BetStack=({bt})=>{
-    const ab=gs?.bets||{};const stacks=[];
-    (gs?.players||[]).forEach(p=>{const pb=ab[p.id]?.[bt];if(!pb)return;stacks.push({player:p,amount:pb,isMe:p.id===pid});});
-    if(!stacks.length)return null;
-    return(<div style={{display:'flex',gap:'4px',flexWrap:'wrap',justifyContent:'center',zIndex:3,position:'relative'}}>
-      {stacks.map(s=>{const ci=chipFor(s.amount);
-        return(<div key={s.player.id} style={{display:'flex',alignItems:'center',gap:'3px',padding:'3px 6px',borderRadius:'6px',
-          background:s.isMe?'rgba(201,168,76,0.2)':'rgba(0,0,0,0.45)',border:s.isMe?'1px solid var(--brass-dim)':'1px solid rgba(255,255,255,0.08)',
-          cursor:s.isMe?'grab':'default',backdropFilter:'blur(2px)'}}
-          draggable={s.isMe} onDragStart={e=>{if(s.isMe){setDragging(true);setDragBet(bt);e.dataTransfer.effectAllowed='move';}}}
-          onDragEnd={()=>{setDragging(false);setDragBet(null);}}>
-          <div style={{width:'22px',height:'22px',borderRadius:'50%',background:ci.color,border:'1.5px solid rgba(255,255,255,0.3)',
-            boxShadow:'0 1px 3px rgba(0,0,0,0.4)',flexShrink:0}}/>
-          <div style={{display:'flex',flexDirection:'column',lineHeight:1.1}}>
-            <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',fontWeight:700,color:'var(--ivory)'}}>${s.amount}</span>
-            <span style={{fontSize:'8px',fontWeight:600,color:s.isMe?'var(--brass)':'var(--ivory-muted)'}}>{s.player.name.substring(0,6)}</span>
-          </div>
-        </div>);})}
-    </div>);
-  };
+u.players=g.players.map(p=>({...p,chips:p.chips+(pay[p.id]||0)}));sv(u);
+const mn=(pay[pid]||0)-(loss[pid]||0);
+if(mn>0){setWld({amount:mn,type:'win'});setTimeout(()=>setWld(null),3000)}
+else if(mn<0){setWld({amount:Math.abs(mn),type:'loss'});setTimeout(()=>setWld(null),3000)}
+if(ms.length)fl(ms.join(' · '))};
 
-  // Table cell with bets display
-  const TC=({bt,label,sub,isOff,style={},labelStyle={}})=>{
-    const ab=gs?.bets||{};
-    const hasBets=gs?.players.some(p=>(ab[p.id]||{})[bt]);
-    return(<div onClick={()=>selDenom&&placeBet(bt,label)} className={'tcell'+(isOff?' off':'')} style={{...style,overflow:'visible'}}>
-      <div className="tcell-label" style={{fontSize:'13px',...labelStyle}}>{label}</div>
-      {sub&&<div className="tcell-sub">{sub}</div>}
-      {isOff&&!hasBets&&<div style={{fontSize:'7px',color:'rgba(255,255,255,0.35)',letterSpacing:'2px',textTransform:'uppercase'}}>off</div>}
-      {hasBets&&<div style={{marginTop:'3px'}}><BetStack bt={bt}/></div>}
-    </div>);
-  };
+const clr=(bets,types)=>{const nb={};Object.keys(bets).forEach(p=>{nb[p]={};Object.keys(bets[p]||{}).forEach(bt=>{if(!types.includes(bt))nb[p][bt]=bets[p][bt]})});return nb};
+const ow=(pt,b)=>{if(pt===4||pt===10)return b*2;if(pt===5||pt===9)return b*1.5;if(pt===6||pt===8)return b*1.2;return 0};
+const dpow=(pt,b)=>{if(pt===4||pt===10)return b*0.5;if(pt===5||pt===9)return b*(2/3);if(pt===6||pt===8)return b*(5/6);return 0};
+const plw=(n,b)=>{if(n===4||n===10)return Math.floor(b*(9/5));if(n===5||n===9)return Math.floor(b*(7/5));if(n===6||n===8)return Math.floor(b*(7/6));return 0};
+const byw=(n,b)=>{if(n===4||n===10)return b*2;if(n===5||n===9)return b*1.5;if(n===6||n===8)return b*1.2;return 0};
+const hw=(n,b)=>{if(n===4||n===10)return b*7;if(n===6||n===8)return b*9;return 0};
 
-  const ComeBetsOn=({num})=>{
-    const cb=gs?.comeBets||{},dcb=gs?.dontComeBets||{};const bets=[];
-    gs?.players.forEach(p=>{(cb[p.id]||[]).filter(x=>x.number===num).forEach(x=>bets.push({p,a:x.amount,t:'C'}));(dcb[p.id]||[]).filter(x=>x.number===num).forEach(x=>bets.push({p,a:x.amount,t:'DC'}));});
-    if(!bets.length)return null;
-    return(<div style={{display:'flex',gap:'2px',justifyContent:'center',flexWrap:'wrap',marginTop:'2px'}}>
-      {bets.map((b,i)=>(<div key={i} style={{fontSize:'7px',padding:'1px 3px',borderRadius:'3px',background:b.t==='C'?'rgba(46,204,113,0.2)':'rgba(231,76,60,0.2)',color:'var(--ivory-dim)',fontWeight:700,fontFamily:'var(--font-mono)'}}>{b.t}${b.a}</div>))}
-    </div>);
-  };
+// === COMPONENTS ===
 
-  if(!gs)return(<div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh'}}><div style={{width:40,height:40,border:'2px solid var(--brass-dim)',borderTop:'2px solid var(--brass)',borderRadius:'50%',animation:'spin 1s linear infinite'}}/></div>);
+const ChipSel=({ci,onClick,disabled,selected})=>(
+<div className={'chip'+(selected?' chip-sel':'')} style={{'--cc':ci.c,opacity:disabled?.3:1,cursor:disabled?'not-allowed':'pointer',background:ci.c}}
+onClick={()=>!disabled&&onClick&&onClick(ci)}>
+<span style={{position:'relative',zIndex:1,color:'#1a1a1e',fontWeight:700,textShadow:'0 1px 1px rgba(255,255,255,.4)',letterSpacing:'-.5px',fontSize:'12px'}}>${ci.v}</span>
+</div>);
 
-  const cp=gs.players.find(p=>p.id===pid);
-  const sid=gs.playerOrder?.[gs.currentShooter];
-  const isShooter=cp&&sid===pid;
-  const shooter=gs.players.find(p=>p.id===sid);
-  const sname=shooter?.name||'\u2014';
-  const bOff=gs.phase==='comeout';
-  const tot=totalOnTable();
+const Die=({value})=>{
+const dp={1:[[50,50]],2:[[25,25],[75,75]],3:[[25,25],[50,50],[75,75]],4:[[25,25],[25,75],[75,25],[75,75]],5:[[25,25],[25,75],[50,50],[75,25],[75,75]],6:[[25,25],[25,50],[25,75],[75,25],[75,50],[75,75]]};
+return(<div className='die-face' style={{width:68,height:68,position:'relative'}}>{dp[value].map((p,i)=>(<div key={i} className='die-pip' style={{position:'absolute',left:p[0]+'%',top:p[1]+'%',transform:'translate(-50%,-50%)'}}/>))}</div>)};
 
-  // ====== JOIN ======
-  if(joinModal||!cp){
-    return(<div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',padding:'20px'}}>
-      <div style={{maxWidth:'440px',width:'100%',animation:'fadeUp 0.6s ease'}}>
-        <div style={{textAlign:'center',marginBottom:'48px'}}>
-          <div style={{fontFamily:'var(--font-display)',fontSize:'48px',fontWeight:600,color:'var(--ivory)',letterSpacing:'-1px',lineHeight:1.1}}>The Ivory Room</div>
-          <div style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--brass)',letterSpacing:'4px',textTransform:'uppercase',marginTop:'12px'}}>Private Craps Table</div>
-          <div style={{width:'60px',height:'1px',background:'linear-gradient(90deg, transparent, var(--brass), transparent)',margin:'20px auto'}}/>
-        </div>
-        <div style={{background:'var(--bg-card)',borderRadius:'16px',padding:'36px',border:'1px solid rgba(201,168,76,0.1)',boxShadow:'var(--shadow-lg)'}}>
-          <input type="text" placeholder="Your name" value={pname} onChange={e=>setPname(e.target.value)} onKeyDown={e=>e.key==='Enter'&&join()}
-            style={{width:'100%',padding:'14px 18px',border:'1px solid rgba(201,168,76,0.2)',borderRadius:'10px',fontSize:'16px',background:'var(--bg-elevated)',color:'var(--ivory)',fontFamily:'var(--font-body)',outline:'none'}} maxLength={15} autoFocus/>
-          <button onClick={join} disabled={!pname.trim()||gs.players.length>=MAXP} className="btn"
-            style={{width:'100%',marginTop:'16px',padding:'14px',borderRadius:'10px',fontSize:'15px',
-              background:(!pname.trim()||gs.players.length>=MAXP)?'var(--bg-elevated)':'linear-gradient(135deg, var(--brass-dim), var(--brass))',
-              color:(!pname.trim()||gs.players.length>=MAXP)?'var(--ivory-muted)':'var(--bg-deep)'}}>{gs.players.length>=MAXP?'Table Full':'Take a Seat'}</button>
-        </div>
-        <div style={{marginTop:'32px',display:'grid',gridTemplateColumns:'repeat(3, 1fr)',gap:'1px',background:'rgba(201,168,76,0.06)',borderRadius:'10px',overflow:'hidden'}}>
-          {[['$250','Buy-in'],['$15','Minimum'],['3-4-5\u00d7','Odds']].map(([v,l],i)=>(
-            <div key={i} style={{padding:'16px',textAlign:'center',background:'var(--bg-card)'}}>
-              <div style={{fontFamily:'var(--font-mono)',fontSize:'16px',fontWeight:700,color:'var(--brass)'}}>{v}</div>
-              <div style={{fontSize:'10px',color:'var(--ivory-muted)',marginTop:'4px',textTransform:'uppercase',letterSpacing:'1px'}}>{l}</div>
-            </div>))}
-        </div>
-        {gs.players.length>0&&(<div style={{marginTop:'24px',padding:'20px',background:'var(--bg-card)',borderRadius:'12px',border:'1px solid rgba(201,168,76,0.06)'}}>
-          <div style={{fontSize:'10px',color:'var(--brass)',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px',fontWeight:600}}>At the Table</div>
-          {gs.playerOrder?.map((p,idx)=>{const pl=gs.players.find(x=>x.id===p);if(!pl)return null;
-            return(<div key={pl.id} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,0.04)',fontSize:'14px'}}>
-              <span style={{color:'var(--ivory-dim)'}}>{idx===gs.currentShooter?'\u25c6 ':''}{pl.name}</span>
-              <span style={{fontFamily:'var(--font-mono)',color:'var(--brass)'}}>${pl.chips}</span></div>);})}
-        </div>)}
-      </div>
-    </div>);
-  }
+// Bet stack: shows chip dot + $amount + player name for each player who bet
+const BetStack=({bt})=>{
+const ab=gs?.bets||{};
+const stacks=[];
+(gs?.players||[]).forEach(p=>{const pb=ab[p.id]?.[bt];if(pb){stacks.push({player:p,amount:pb,isMe:p.id===pid})}});
+if(!stacks.length)return null;
+return(<div style={{display:'flex',gap:'4px',flexWrap:'wrap',justifyContent:'center',marginTop:'3px'}}>
+{stacks.map(s=>{const ci=cFor(s.amount);
+return(<div key={s.player.id} style={{display:'flex',alignItems:'center',gap:'3px',padding:'2px 5px',borderRadius:'6px',
+background:s.isMe?'rgba(201,168,76,.2)':'rgba(0,0,0,.45)',border:s.isMe?'1px solid var(--brass2)':'1px solid rgba(255,255,255,.08)',
+cursor:s.isMe?'grab':'default',backdropFilter:'blur(2px)'}}
+draggable={s.isMe} onDragStart={e=>{if(s.isMe){setDragOn(true);setDragBt(bt);e.dataTransfer.effectAllowed='move'}}}
+onDragEnd={()=>{setDragOn(false);setDragBt(null)}}>
+<div style={{width:'20px',height:'20px',borderRadius:'50%',background:ci.c,border:'1.5px solid rgba(255,255,255,.3)',boxShadow:'0 1px 3px rgba(0,0,0,.4)',flexShrink:0}}/>
+<div style={{display:'flex',flexDirection:'column',lineHeight:1.1}}>
+<span style={{fontFamily:'var(--fm)',fontSize:'10px',fontWeight:700,color:'var(--iv)'}}>${s.amount}</span>
+<span style={{fontSize:'8px',fontWeight:600,color:s.isMe?'var(--brass)':'var(--iv3)'}}>{s.player.name.substring(0,6)}</span>
+</div></div>)})}
+</div>)};
 
-  const dzOver=e=>{e.preventDefault();e.currentTarget.classList.add('drag-over');};
-  const dzLeave=e=>{e.currentTarget.classList.remove('drag-over');};
-  const dzDrop=e=>{e.preventDefault();e.currentTarget.classList.remove('drag-over');if(dragBet){removeBet(dragBet);setDragBet(null);}};
+// Come bets sitting on numbers
+const ComeBetsOn=({num})=>{
+const cbs=gs?.cb||{},dcbs=gs?.dcb||{};const bets=[];
+gs?.players.forEach(p=>{(cbs[p.id]||[]).filter(x=>x.number===num).forEach(x=>bets.push({p,a:x.amount,t:'C'}));(dcbs[p.id]||[]).filter(x=>x.number===num).forEach(x=>bets.push({p,a:x.amount,t:'DC'}))});
+if(!bets.length)return null;
+return(<div style={{display:'flex',gap:'2px',justifyContent:'center',flexWrap:'wrap',marginTop:'2px'}}>
+{bets.map((b,i)=>(<div key={i} style={{fontSize:'7px',padding:'1px 3px',borderRadius:'3px',background:b.t==='C'?'rgba(46,204,113,.2)':'rgba(231,76,60,.2)',color:'var(--iv2)',fontWeight:700,fontFamily:'var(--fm)'}}>{b.t}${b.a}</div>))}
+</div>)};
 
-  // ====== MAIN TABLE ======
-  return(
-    <div style={{minHeight:'100vh',background:'linear-gradient(160deg, #0c0c0e 0%, #12121a 40%, #0e0e12 100%)',position:'relative'}}>
+// Table cell
+const TC=({bt,label,sub,isOff,style={},ls={}})=>{
+const hasBets=gs?.players.some(p=>(gs?.bets[p.id]||{})[bt]);
+return(<div onClick={()=>selD&&placeBet(bt,label)} className={'tc'+(isOff?' off':'')} style={style}>
+<div style={{color:'var(--iv)',fontWeight:700,fontFamily:'var(--fd)',textTransform:'uppercase',letterSpacing:'1px',textShadow:'1px 1px 3px rgba(0,0,0,.5)',textAlign:'center',lineHeight:1.1,fontSize:'13px',...ls}}>{label}</div>
+{sub&&<div style={{color:'rgba(255,255,255,.5)',fontSize:'9px',fontFamily:'var(--fm)',marginTop:'1px'}}>{sub}</div>}
+{isOff&&!hasBets&&<div style={{fontSize:'7px',color:'rgba(255,255,255,.35)',letterSpacing:'2px'}}>OFF</div>}
+{hasBets&&<BetStack bt={bt}/>}
+</div>)};
 
-      <div style={{position:'relative',zIndex:1,padding:'12px',maxWidth:'920px',margin:'0 auto'}}>
+if(!gs)return(<div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh'}}><div style={{width:40,height:40,border:'2px solid var(--brass2)',borderTop:'2px solid var(--brass)',borderRadius:'50%',animation:'spin 1s linear infinite'}}/></div>);
 
-        {/* Result overlay */}
-        {wld&&wld.playerId===pid&&(<div className="result-overlay" style={{position:'fixed',top:'50%',left:'50%',zIndex:9999,
-          background:'rgba(12,12,14,0.88)',backdropFilter:'blur(12px)',padding:'36px 52px',borderRadius:'20px',textAlign:'center',
-          border:wld.type==='win'?'1px solid rgba(46,204,113,0.3)':'1px solid rgba(231,76,60,0.3)',
-          boxShadow:wld.type==='win'?'0 0 60px rgba(46,204,113,0.15)':'0 0 60px rgba(231,76,60,0.15)'}}>
-          <div style={{fontFamily:'var(--font-display)',fontSize:'48px',fontWeight:600,color:wld.type==='win'?'var(--green-win)':'var(--loss-red)'}}>
-            {wld.type==='win'?'+':'-'}${wld.amount}</div>
-          <div style={{fontSize:'11px',letterSpacing:'3px',textTransform:'uppercase',color:'var(--ivory-muted)',marginTop:'8px'}}>{wld.type==='win'?'Winner':'Lost'}</div>
-        </div>)}
+const cp=gs.players.find(p=>p.id===pid);
+const sid=gs.po?.[gs.cs];
+const isShooter=cp&&sid===pid;
+const shooter=gs.players.find(p=>p.id===sid);
+const sname=shooter?.name||'—';
+const bOff=gs.phase==='comeout';
+const tot=totOT();
 
-        {/* Dealer call */}
-        {dcall&&(<div className="dealer-banner" style={{position:'fixed',top:'14px',left:'50%',zIndex:1000,
-          background:'rgba(12,12,14,0.9)',backdropFilter:'blur(8px)',color:'var(--brass)',padding:'14px 36px',borderRadius:'100px',
-          fontSize:'21px',fontWeight:500,fontFamily:'var(--font-display)',fontStyle:'italic',border:'1px solid rgba(201,168,76,0.15)',boxShadow:'var(--shadow-lg)'}}>{dcall}</div>)}
+// ====== JOIN SCREEN ======
+if(joinM||!cp){return(
+<div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',padding:'20px'}}>
+<div style={{maxWidth:'440px',width:'100%',animation:'fadeUp .6s ease'}}>
+<div style={{textAlign:'center',marginBottom:'48px'}}>
+<div style={{fontFamily:'var(--fd)',fontSize:'48px',fontWeight:600,color:'var(--iv)',letterSpacing:'-1px',lineHeight:1.1}}>The Ivory Room</div>
+<div style={{fontFamily:'var(--fm)',fontSize:'11px',color:'var(--brass)',letterSpacing:'4px',textTransform:'uppercase',marginTop:'12px'}}>Private Craps Table</div>
+<div style={{width:'60px',height:'1px',background:'linear-gradient(90deg,transparent,var(--brass),transparent)',margin:'20px auto'}}/>
+</div>
+<div style={{background:'var(--bg2)',borderRadius:'16px',padding:'36px',border:'1px solid rgba(201,168,76,.1)',boxShadow:'0 8px 32px rgba(0,0,0,.6)'}}>
+<input type='text' placeholder='Your name' value={pname} onChange={e=>setPname(e.target.value)} onKeyDown={e=>e.key==='Enter'&&join()}
+style={{width:'100%',padding:'14px 18px',border:'1px solid rgba(201,168,76,.2)',borderRadius:'10px',fontSize:'16px',background:'var(--bg3)',color:'var(--iv)',fontFamily:'var(--fb)',outline:'none'}} maxLength={15} autoFocus/>
+<button onClick={join} disabled={!pname.trim()||gs.players.length>=MAXP} className='btn'
+style={{width:'100%',marginTop:'16px',padding:'14px',borderRadius:'10px',fontSize:'15px',
+background:(!pname.trim()||gs.players.length>=MAXP)?'var(--bg3)':'linear-gradient(135deg,var(--brass2),var(--brass))',
+color:(!pname.trim()||gs.players.length>=MAXP)?'var(--iv3)':'var(--bg)'}}>{gs.players.length>=MAXP?'Table Full':'Take a Seat'}</button>
+</div>
+<div style={{marginTop:'32px',display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:'1px',background:'rgba(201,168,76,.06)',borderRadius:'10px',overflow:'hidden'}}>
+{[['$250','Buy-in'],['$15','Minimum'],['3-4-5×','Odds']].map(([v,l],i)=>(
+<div key={i} style={{padding:'16px',textAlign:'center',background:'var(--bg2)'}}>
+<div style={{fontFamily:'var(--fm)',fontSize:'16px',fontWeight:700,color:'var(--brass)'}}>{v}</div>
+<div style={{fontSize:'10px',color:'var(--iv3)',marginTop:'4px',textTransform:'uppercase',letterSpacing:'1px'}}>{l}</div>
+</div>))}
+</div>
+{gs.players.length>0&&(<div style={{marginTop:'24px',padding:'20px',background:'var(--bg2)',borderRadius:'12px',border:'1px solid rgba(201,168,76,.06)'}}>
+<div style={{fontSize:'10px',color:'var(--brass)',letterSpacing:'2px',textTransform:'uppercase',marginBottom:'12px',fontWeight:600}}>At the Table</div>
+{gs.po?.map((p,idx)=>{const pl=gs.players.find(x=>x.id===p);if(!pl)return null;
+return(<div key={pl.id} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,.04)',fontSize:'14px'}}>
+<span style={{color:'var(--iv2)'}}>{idx===gs.cs?'◆ ':''}{pl.name}</span>
+<span style={{fontFamily:'var(--fm)',color:'var(--brass)'}}>${pl.chips}</span></div>)})}
+</div>)}
+</div></div>)}
 
-        {/* Header bar */}
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 16px',background:'var(--bg-card)',borderRadius:'12px',marginBottom:'10px',border:'1px solid rgba(255,255,255,0.06)',flexWrap:'wrap',gap:'10px'}}>
-          <div>
-            <div style={{fontFamily:'var(--font-display)',fontSize:'20px',fontWeight:600,color:'var(--ivory)'}}>The Ivory Room</div>
-            <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--ivory-muted)',letterSpacing:'1px'}}>MIN $15 \u00b7 ODDS 3-4-5\u00d7 \u00b7 BUY 5% VIG</div>
-          </div>
-          <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
-            <div style={{textAlign:'right'}}>
-              <div style={{fontSize:'9px',color:'var(--ivory-muted)',letterSpacing:'1px',textTransform:'uppercase'}}>{cp.name}</div>
-              <div style={{fontFamily:'var(--font-mono)',fontSize:'22px',fontWeight:700,color:cp.chips>=START?'var(--green-win)':'var(--loss-red)',letterSpacing:'-1px'}}>${cp.chips}</div>
-            </div>
-            <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'8px 12px',background:'var(--bg-elevated)',borderRadius:'8px'}}>
-              <div className={'puck-marker '+(gs.phase==='comeout'?'off':'on')}>{gs.phase==='comeout'?'OFF':'ON'}</div>
-              <div>
-                {gs.phase==='comeout'?<div style={{fontSize:'11px',color:'var(--ivory-dim)'}}>Come Out</div>:
-                  <div><div style={{fontSize:'9px',color:'var(--ivory-muted)'}}>Point</div><div style={{fontFamily:'var(--font-mono)',fontSize:'18px',fontWeight:700,color:'var(--brass)'}}>{gs.point}</div></div>}
-              </div>
-            </div>
-          </div>
-        </div>
+const dzOver=e=>{e.preventDefault();e.currentTarget.classList.add('drag-over')};
+const dzLeave=e=>{e.currentTarget.classList.remove('drag-over')};
+const dzDrop=e=>{e.preventDefault();e.currentTarget.classList.remove('drag-over');if(dragBt){rmBet(dragBt);setDragBt(null)}};
 
-        {/* Shooter info */}
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 16px',marginBottom:'8px',flexWrap:'wrap',gap:'6px'}}>
-          <div style={{fontSize:'12px',color:'var(--ivory-dim)'}}>Shooter: <span style={{color:isShooter?'var(--brass)':'var(--ivory)',fontWeight:600}}>{sname}{isShooter?' (you)':''}</span></div>
-          {gs.lastTotal&&<div style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--ivory-muted)',background:'var(--bg-elevated)',padding:'3px 8px',borderRadius:'4px'}}>Last: {gs.lastTotal}</div>}
-          {cp.chips<TMIN&&<button onClick={rebuy} className="btn" style={{padding:'4px 12px',borderRadius:'6px',fontSize:'10px',background:'var(--brass)',color:'var(--bg-deep)',fontWeight:700}}>Rebuy</button>}
-        </div>
+// ====== MAIN TABLE ======
+return(
+<div style={{padding:'12px',maxWidth:'920px',margin:'0 auto'}}>
 
-        {msg&&<div style={{padding:'8px 14px',borderRadius:'8px',marginBottom:'8px',textAlign:'center',fontSize:'12px',fontWeight:500,background:'rgba(201,168,76,0.06)',border:'1px solid rgba(201,168,76,0.12)',color:'var(--brass)',backdropFilter:'blur(4px)'}}>{msg}</div>}
-        {dragging&&<div className="drop-zone" onDragOver={dzOver} onDragLeave={dzLeave} onDrop={dzDrop} style={{marginBottom:'8px'}}><div style={{fontSize:'12px',color:'var(--brass)',letterSpacing:'1px'}}>Return to Rack</div></div>}
+{wld&&(<div className='result-overlay' style={{position:'fixed',top:'50%',left:'50%',zIndex:9999,
+background:'rgba(12,12,14,.88)',backdropFilter:'blur(12px)',padding:'36px 52px',borderRadius:'20px',textAlign:'center',
+border:wld.type==='win'?'1px solid rgba(46,204,113,.3)':'1px solid rgba(231,76,60,.3)',
+boxShadow:wld.type==='win'?'0 0 60px rgba(46,204,113,.15)':'0 0 60px rgba(231,76,60,.15)'}}>
+<div style={{fontFamily:'var(--fd)',fontSize:'48px',fontWeight:600,color:wld.type==='win'?'var(--grn)':'var(--lred)'}}>
+{wld.type==='win'?'+':'-'}${wld.amount}</div>
+<div style={{fontSize:'11px',letterSpacing:'3px',textTransform:'uppercase',color:'var(--iv3)',marginTop:'8px'}}>{wld.type==='win'?'Winner':'Lost'}</div>
+</div>)}
 
-        {/* ======= THE TABLE LAYOUT ======= */}
-        {/* Modeled after real craps felt: Pass Line wraps the outside, then DP, then numbers, come, field, props in center */}
-        <div className="felt-bg" style={{borderRadius:'20px',overflow:'hidden',border:'6px solid var(--rail)',boxShadow:'inset 0 2px 30px rgba(0,0,0,0.4), 0 4px 30px rgba(0,0,0,0.5), 0 0 0 2px var(--rail-edge)',marginBottom:'10px'}}>
+{dcall&&(<div className='dealer-banner' style={{position:'fixed',top:'14px',left:'50%',zIndex:1000,
+background:'rgba(12,12,14,.9)',backdropFilter:'blur(8px)',color:'var(--brass)',padding:'14px 36px',borderRadius:'100px',
+fontSize:'21px',fontWeight:500,fontFamily:'var(--fd)',fontStyle:'italic',border:'1px solid rgba(201,168,76,.15)',boxShadow:'0 8px 32px rgba(0,0,0,.6)'}}>{dcall}</div>)}
 
-          {/* === ROW 1: Don't Come Bar + Number boxes === */}
-          <div style={{display:'grid',gridTemplateColumns:'1fr repeat(6, 1fr)',gap:0}}>
-            <TC bt="dontcome" label="DON'T COME" sub="Bar 12" style={{borderRadius:'0',minHeight:'60px'}} labelStyle={{fontSize:'10px',letterSpacing:'0.5px'}}/>
-            {[4,5,6,8,9,10].map(num=>(
-              <div key={num} style={{position:"relative"}}>
-                <div onClick={()=>selDenom&&placeBet("place"+num,"Place "+num)} className={"tcell"+(bOff?" off":"")}
-                  style={{borderRadius:0,minHeight:"80px",borderLeft:"none",cursor:"pointer",background:gs.point===num?"rgba(255,255,255,0.06)":"",overflow:"visible"}}>
-                  <div style={{fontFamily:"var(--font-display)",fontSize:num===6||num===9?"26px":"32px",fontWeight:700,color:"var(--ivory)",
-                    fontStyle:num===6||num===9?"italic":"normal",textShadow:"2px 2px 4px rgba(0,0,0,0.5)",position:"relative",zIndex:1}}>
-                    {num===6?"Six":num===9?"Nine":num}
-                  </div>
-                  <BetStack bt={"place"+num}/>
-                  {bOff&&!gs?.players.some(p=>(gs.bets[p.id]||{})["place"+num])&&<div style={{fontSize:"7px",color:"rgba(255,255,255,0.35)",letterSpacing:"2px",textTransform:"uppercase",position:"absolute",bottom:"2px"}}>off</div>}
-                </div>
-                <ComeBetsOn num={num}/>
-                {gs.point===num&&<div className="puck-marker on" style={{position:"absolute",top:"2px",right:"2px",width:"24px",height:"24px",fontSize:"7px",zIndex:5}}>ON</div>}
-              </div>
-            ))}
-          </div>
-          </div>
+{/* Header */}
+<div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 16px',background:'var(--bg2)',borderRadius:'12px',marginBottom:'10px',border:'1px solid rgba(255,255,255,.06)',flexWrap:'wrap',gap:'10px'}}>
+<div>
+<div style={{fontFamily:'var(--fd)',fontSize:'20px',fontWeight:600,color:'var(--iv)'}}>The Ivory Room</div>
+<div style={{fontFamily:'var(--fm)',fontSize:'9px',color:'var(--iv3)',letterSpacing:'1px'}}>MIN $15 · ODDS 3-4-5× · BUY 5% VIG</div>
+</div>
+<div style={{display:'flex',alignItems:'center',gap:'16px'}}>
+<div style={{textAlign:'right'}}>
+<div style={{fontSize:'9px',color:'var(--iv3)',letterSpacing:'1px',textTransform:'uppercase'}}>{cp.name}</div>
+<div style={{fontFamily:'var(--fm)',fontSize:'22px',fontWeight:700,color:cp.chips>=START?'var(--grn)':'var(--lred)',letterSpacing:'-1px'}}>${cp.chips}</div>
+</div>
+<div style={{display:'flex',alignItems:'center',gap:'10px',padding:'8px 12px',background:'var(--bg3)',borderRadius:'8px'}}>
+<div className={'puck '+(gs.phase==='comeout'?'off':'on')}>{gs.phase==='comeout'?'OFF':'ON'}</div>
+<div>{gs.phase==='comeout'?<div style={{fontSize:'11px',color:'var(--iv2)'}}>Come Out</div>:
+<div><div style={{fontSize:'9px',color:'var(--iv3)'}}>Point</div><div style={{fontFamily:'var(--fm)',fontSize:'18px',fontWeight:700,color:'var(--brass)'}}>{gs.point}</div></div>}</div>
+</div></div></div>
 
-          {/* === ROW 2: Buy bets under numbers === */}
-          <div style={{display:'grid',gridTemplateColumns:'1fr repeat(6, 1fr)',gap:0}}>
-            <div style={{background:'rgba(0,0,0,0.02)',border:'1.5px solid var(--table-line)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <div style={{fontSize:'8px',color:'var(--ivory-muted)',fontFamily:'var(--font-mono)',textAlign:'center',lineHeight:1.3}}>BUY<br/>5% vig</div>
-            </div>
-            {[4,5,6,8,9,10].map(num=>(
-              <TC key={num} bt={'buy'+num} label="BUY" isOff={bOff} style={{borderRadius:0,minHeight:'36px',borderLeft:'none',borderTop:'none'}} labelStyle={{fontSize:'9px'}}/>
-            ))}
-          </div>
+{/* Shooter + status */}
+<div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 16px',marginBottom:'8px',flexWrap:'wrap',gap:'6px'}}>
+<div style={{fontSize:'12px',color:'var(--iv2)'}}>Shooter: <span style={{color:isShooter?'var(--brass)':'var(--iv)',fontWeight:600}}>{sname}{isShooter?' (you)':''}</span></div>
+{gs.lastTotal&&<div style={{fontFamily:'var(--fm)',fontSize:'11px',color:'var(--iv3)',background:'var(--bg3)',padding:'3px 8px',borderRadius:'4px'}}>Last: {gs.lastTotal}</div>}
+{cp.chips<TMIN&&<button onClick={rebuy} className='btn' style={{padding:'4px 12px',borderRadius:'6px',fontSize:'10px',background:'var(--brass)',color:'var(--bg)',fontWeight:700}}>Rebuy</button>}
+</div>
 
-          {/* === ROW 3: COME === */}
-          <TC bt="come" label="COME" style={{borderRadius:0,minHeight:'56px',borderTop:'none'}} labelStyle={{fontSize:'22px',fontFamily:'var(--font-display)',fontWeight:700,letterSpacing:'3px'}}/>
+{msg&&<div style={{padding:'8px 14px',borderRadius:'8px',marginBottom:'8px',textAlign:'center',fontSize:'12px',fontWeight:500,background:'rgba(201,168,76,.06)',border:'1px solid rgba(201,168,76,.12)',color:'var(--brass)'}}>{msg}</div>}
+{dragOn&&<div className='drop-zone' onDragOver={dzOver} onDragLeave={dzLeave} onDrop={dzDrop} style={{marginBottom:'8px'}}><div style={{fontSize:'12px',color:'var(--brass)',letterSpacing:'1px'}}>Return to Rack</div></div>}
 
-          {/* === ROW 4: FIELD === */}
-          <TC bt="field" label="FIELD" sub="2 \u00b7 3 \u00b7 4 \u00b7 9 \u00b7 10 \u00b7 11 \u00b7 12 \u2014 Double on 2 & 12" style={{borderRadius:0,minHeight:'50px',borderTop:'none'}} labelStyle={{fontSize:'16px',letterSpacing:'2px'}}/>
+{/* ======= TABLE ======= */}
+<div className='felt-bg' style={{borderRadius:'20px',overflow:'hidden',border:'6px solid var(--rail)',boxShadow:'inset 0 2px 30px rgba(0,0,0,.4),0 4px 30px rgba(0,0,0,.5),0 0 0 2px var(--rail3)',marginBottom:'10px'}}>
 
-          {/* === ROW 5: Center props - Hardways + Horn + C&E + Any === */}
-          <div style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr) 2fr repeat(2, 1fr)',gap:0}}>
-            {[4,6,8,10].map(num=>(
-              <TC key={num} bt={'hard'+num} label={'Hard '+num} sub={(num===4||num===10)?'7:1':'9:1'} isOff={bOff} style={{borderRadius:0,minHeight:'50px',borderTop:'none'}} labelStyle={{fontSize:'10px'}}/>
-            ))}
-            <TC bt="horn" label="HORN" sub="30:1 / 15:1" style={{borderRadius:0,minHeight:'50px',borderTop:'none'}} labelStyle={{fontSize:'11px'}}/>
-            <TC bt="ce" label="C & E" style={{borderRadius:0,minHeight:'50px',borderTop:'none'}} labelStyle={{fontSize:'11px'}}/>
-            <TC bt="anyCraps" label="ANY CRAPS" sub="7:1" style={{borderRadius:0,minHeight:'50px',borderTop:'none'}} labelStyle={{fontSize:'9px'}}/>
-          </div>
+{/* Row 1: Don't Come + Numbers */}
+<div style={{display:'grid',gridTemplateColumns:'1fr repeat(6,1fr)',gap:0}}>
+<TC bt='dontcome' label="DON'T COME" sub='Bar 12' style={{borderRadius:0,minHeight:'60px'}} ls={{fontSize:'10px',letterSpacing:'.5px'}}/>
+{[4,5,6,8,9,10].map(num=>(
+<div key={num} style={{position:'relative'}}>
+<div onClick={()=>selD&&placeBet('place'+num,'Place '+num)} className={'tc'+(bOff?' off':'')}
+style={{borderRadius:0,minHeight:'80px',borderLeft:'none',cursor:'pointer',background:gs.point===num?'rgba(255,255,255,.06)':''}}>
+<div style={{fontFamily:'var(--fd)',fontSize:num===6||num===9?'26px':'32px',fontWeight:700,color:'var(--iv)',
+fontStyle:num===6||num===9?'italic':'normal',textShadow:'2px 2px 4px rgba(0,0,0,.5)',position:'relative',zIndex:1}}>
+{num===6?'Six':num===9?'Nine':num}</div>
+<BetStack bt={'place'+num}/>
+{bOff&&!gs.players.some(p=>(gs.bets[p.id]||{})['place'+num])&&<div style={{fontSize:'7px',color:'rgba(255,255,255,.35)',letterSpacing:'2px',position:'absolute',bottom:'2px'}}>OFF</div>}
+</div>
+<ComeBetsOn num={num}/>
+{gs.point===num&&<div className='puck on' style={{position:'absolute',top:'2px',right:'2px',width:'24px',height:'24px',fontSize:'7px',zIndex:5}}>ON</div>}
+</div>))}
+</div>
 
-          {/* === ROW 6: Any Seven === */}
-          <TC bt="anySeven" label="ANY SEVEN" sub="4:1" style={{borderRadius:0,minHeight:'38px',borderTop:'none'}} labelStyle={{fontSize:'11px',letterSpacing:'2px'}}/>
+{/* Row 2: Buy bets */}
+<div style={{display:'grid',gridTemplateColumns:'1fr repeat(6,1fr)',gap:0}}>
+<div style={{background:'rgba(0,0,0,.02)',border:'1.5px solid var(--tl)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+<div style={{fontSize:'8px',color:'var(--iv3)',fontFamily:'var(--fm)',textAlign:'center',lineHeight:1.3}}>BUY<br/>5% vig</div></div>
+{[4,5,6,8,9,10].map(num=>(
+<TC key={num} bt={'buy'+num} label='BUY' isOff={bOff} style={{borderRadius:0,minHeight:'36px',borderLeft:'none',borderTop:'none'}} ls={{fontSize:'9px'}}/>
+))}
+</div>
 
-          {/* === ROW 7: ODDS (only shown when point is set) === */}
-          {gs.point&&(
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:0}}>
-              <TC bt="passodds" label="PASS ODDS" style={{borderRadius:0,minHeight:'44px',borderTop:'none',background:'rgba(46,204,113,0.06)'}} labelStyle={{fontSize:'11px'}}/>
-              <TC bt="dontpassodds" label="DP ODDS" style={{borderRadius:0,minHeight:'44px',borderTop:'none',borderLeft:'none',background:'rgba(46,204,113,0.06)'}} labelStyle={{fontSize:'11px'}}/>
-            </div>
-          )}
+{/* Row 3: COME */}
+<TC bt='come' label='COME' style={{borderRadius:0,minHeight:'56px',borderTop:'none'}} ls={{fontSize:'22px',fontFamily:'var(--fd)',fontWeight:700,letterSpacing:'3px'}}/>
 
-          {/* === DON'T PASS BAR === */}
-          <TC bt="dontpass" label="DON'T PASS BAR" sub="Bar 12" style={{borderRadius:0,minHeight:'44px',borderTop:'none'}} labelStyle={{fontSize:'12px',letterSpacing:'1px'}}/>
+{/* Row 4: FIELD */}
+<TC bt='field' label='FIELD' sub='2 · 3 · 4 · 9 · 10 · 11 · 12 — Double on 2 & 12' style={{borderRadius:0,minHeight:'50px',borderTop:'none'}} ls={{fontSize:'16px',letterSpacing:'2px'}}/>
 
-          {/* === PASS LINE === */}
-          <TC bt="pass" label="PASS LINE" style={{borderRadius:'0 0 14px 14px',minHeight:'58px',borderTop:'none',background:'rgba(255,255,255,0.03)'}} labelStyle={{fontSize:'22px',fontFamily:'var(--font-display)',fontWeight:700,letterSpacing:'3px'}}/>
-        </div>
+{/* Row 5: Props */}
+<div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr) 2fr repeat(2,1fr)',gap:0}}>
+{[4,6,8,10].map(num=>(
+<TC key={num} bt={'hard'+num} label={'Hard '+num} sub={(num===4||num===10)?'7:1':'9:1'} isOff={bOff} style={{borderRadius:0,minHeight:'50px',borderTop:'none'}} ls={{fontSize:'10px'}}/>))}
+<TC bt='horn' label='HORN' sub='30:1 / 15:1' style={{borderRadius:0,minHeight:'50px',borderTop:'none'}} ls={{fontSize:'11px'}}/>
+<TC bt='ce' label='C & E' style={{borderRadius:0,minHeight:'50px',borderTop:'none'}} ls={{fontSize:'11px'}}/>
+<TC bt='anyCraps' label='ANY CRAPS' sub='7:1' style={{borderRadius:0,minHeight:'50px',borderTop:'none'}} ls={{fontSize:'9px'}}/>
+</div>
 
-        {/* Dice */}
-        <div style={{background:'var(--bg-card)',padding:'20px',borderRadius:'14px',marginBottom:'10px',textAlign:'center',border:'1px solid rgba(255,255,255,0.06)'}}>
-          <div style={{display:'flex',justifyContent:'center',gap:'14px',marginBottom:'16px'}}><Die value={dice.die1}/><Die value={dice.die2}/></div>
-          {isShooter?(<button onClick={roll} disabled={rolling} className="btn"
-            style={{width:'100%',maxWidth:'340px',padding:'14px',borderRadius:'12px',fontSize:'15px',fontWeight:700,letterSpacing:'1px',textTransform:'uppercase',
-              background:rolling?'rgba(255,255,255,0.05)':'linear-gradient(135deg, var(--red-accent), var(--red-deep))',
-              color:rolling?'var(--ivory-muted)':'var(--ivory)',boxShadow:rolling?'none':'0 4px 20px rgba(192,57,43,0.3)'}}>
-            {rolling?'Rolling...':'Roll Dice'}</button>
-          ):(<div style={{color:'var(--ivory-muted)',padding:'14px',fontSize:'14px',fontStyle:'italic',fontFamily:'var(--font-display)'}}>Waiting for {sname}</div>)}
-        </div>
+{/* Row 6: Any Seven */}
+<TC bt='anySeven' label='ANY SEVEN' sub='4:1' style={{borderRadius:0,minHeight:'38px',borderTop:'none'}} ls={{fontSize:'11px',letterSpacing:'2px'}}/>
 
-        {/* Chips & Actions */}
-        <div style={{background:'var(--bg-card)',padding:'14px',borderRadius:'14px',marginBottom:'10px',border:'1px solid rgba(255,255,255,0.06)'}}>
-          <div style={{display:'flex',gap:'10px',justifyContent:'center',marginBottom:'12px'}}>
-            {CHIPS.map(ci=>(<Chip key={ci.value} ci={ci} onClick={c=>setSelDenom(c.value)} disabled={cp.chips<ci.value} selected={selDenom===ci.value}/>))}
-          </div>
-          <div style={{display:'flex',gap:'6px',justifyContent:'center',flexWrap:'wrap'}}>
-            {[['inside','Inside'],['outside','Outside'],['across','Across']].map(([k,l])=>(
-              <button key={k} onClick={()=>preset(k)} disabled={!selDenom} className="btn"
-                style={{padding:'7px 14px',borderRadius:'8px',fontSize:'10px',fontWeight:600,background:'var(--bg-elevated)',color:selDenom?'var(--brass)':'var(--ivory-muted)',border:'1px solid rgba(201,168,76,0.15)'}}>{l}</button>))}
-            <button onClick={pullAll} disabled={tot===0} className="btn" style={{padding:'7px 14px',borderRadius:'8px',fontSize:'10px',fontWeight:600,background:'var(--bg-elevated)',color:'var(--loss-red)',border:'1px solid rgba(231,76,60,0.15)'}}>Pull Down</button>
-            <button onClick={()=>setSelDenom(null)} className="btn" style={{padding:'7px 14px',borderRadius:'8px',fontSize:'10px',fontWeight:600,background:'var(--bg-elevated)',color:'var(--ivory-muted)',border:'1px solid rgba(255,255,255,0.06)'}}>Clear</button>
-          </div>
-        </div>
+{/* Row 7: Odds (inside table, only when point set) */}
+{gs.point&&(
+<div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:0}}>
+<TC bt='passodds' label='PASS ODDS' style={{borderRadius:0,minHeight:'44px',borderTop:'none',background:'rgba(46,204,113,.06)'}} ls={{fontSize:'11px'}}/>
+<TC bt='dontpassodds' label='DP ODDS' style={{borderRadius:0,minHeight:'44px',borderTop:'none',borderLeft:'none',background:'rgba(46,204,113,.06)'}} ls={{fontSize:'11px'}}/>
+</div>)}
 
-        {/* Players */}
-        <div style={{background:'var(--bg-card)',padding:'14px',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.06)'}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
-            <div style={{fontSize:'10px',color:'var(--brass)',letterSpacing:'2px',textTransform:'uppercase',fontWeight:600}}>Players \u00b7 {gs.players.length}/6</div>
-            <button onClick={()=>{if(window.confirm('Reset table?')){save(init());localStorage.removeItem('craps-player-id');setPid(null);setJoinModal(true);}}} className="btn"
-              style={{padding:'3px 10px',borderRadius:'6px',fontSize:'9px',background:'transparent',color:'var(--ivory-muted)',border:'1px solid rgba(255,255,255,0.06)'}}>Reset</button>
-          </div>
-          {gs.playerOrder?.map((p,idx)=>{const pl=gs.players.find(x=>x.id===p);if(!pl)return null;const isMe=pl.id===pid;
-            return(<div key={pl.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 12px',borderRadius:'8px',marginBottom:'3px',
-              background:isMe?'rgba(201,168,76,0.06)':'transparent',border:idx===gs.currentShooter?'1px solid rgba(201,168,76,0.15)':'1px solid transparent'}}>
-              <span style={{fontSize:'13px',fontWeight:isMe?600:400,color:isMe?'var(--ivory)':'var(--ivory-dim)'}}>
-                {idx===gs.currentShooter&&<span style={{color:'var(--brass)',marginRight:'6px'}}>\u25c6</span>}{pl.name}{isMe&&<span style={{fontSize:'9px',color:'var(--brass)',marginLeft:'6px'}}>you</span>}
-              </span>
-              <span style={{fontFamily:'var(--font-mono)',fontSize:'14px',fontWeight:700,color:pl.chips>=START?'var(--green-win)':'var(--loss-red)'}}>${pl.chips}</span>
-            </div>);})}
-        </div>
+{/* Row 8: Don't Pass */}
+<TC bt='dontpass' label="DON'T PASS BAR" sub='Bar 12' style={{borderRadius:0,minHeight:'44px',borderTop:'none'}} ls={{fontSize:'12px',letterSpacing:'1px'}}/>
 
-        <div style={{textAlign:'center',padding:'16px 0',fontSize:'9px',color:'rgba(255,255,255,0.1)',letterSpacing:'2px',textTransform:'uppercase',fontFamily:'var(--font-mono)'}}>The Ivory Room \u00b7 Est. 2025</div>
-      </div>
-    </div>
-  );
-};
+{/* Row 9: Pass Line */}
+<TC bt='pass' label='PASS LINE' style={{borderRadius:'0 0 14px 14px',minHeight:'58px',borderTop:'none',background:'rgba(255,255,255,.03)'}} ls={{fontSize:'22px',fontFamily:'var(--fd)',fontWeight:700,letterSpacing:'3px'}}/>
+</div>
+
+{/* Dice */}
+<div style={{background:'var(--bg2)',padding:'20px',borderRadius:'14px',marginBottom:'10px',textAlign:'center',border:'1px solid rgba(255,255,255,.06)'}}>
+<div style={{display:'flex',justifyContent:'center',gap:'14px',marginBottom:'16px'}}><Die value={dice.d1}/><Die value={dice.d2}/></div>
+{isShooter?(<button onClick={doRoll} disabled={rolling} className='btn'
+style={{width:'100%',maxWidth:'340px',padding:'14px',borderRadius:'12px',fontSize:'15px',fontWeight:700,letterSpacing:'1px',textTransform:'uppercase',
+background:rolling?'rgba(255,255,255,.05)':'linear-gradient(135deg,var(--red),var(--red2))',
+color:rolling?'var(--iv3)':'var(--iv)',boxShadow:rolling?'none':'0 4px 20px rgba(192,57,43,.3)'}}>
+{rolling?'Rolling...':'Roll Dice'}</button>
+):(<div style={{color:'var(--iv3)',padding:'14px',fontSize:'14px',fontStyle:'italic',fontFamily:'var(--fd)'}}>Waiting for {sname}</div>)}
+</div>
+
+{/* Chips & Actions */}
+<div style={{background:'var(--bg2)',padding:'14px',borderRadius:'14px',marginBottom:'10px',border:'1px solid rgba(255,255,255,.06)'}}>
+<div style={{display:'flex',gap:'10px',justifyContent:'center',marginBottom:'12px'}}>
+{CV.map(ci=>(<ChipSel key={ci.v} ci={ci} onClick={c=>setSelD(c.v)} disabled={cp.chips<ci.v} selected={selD===ci.v}/>))}
+</div>
+<div style={{display:'flex',gap:'6px',justifyContent:'center',flexWrap:'wrap'}}>
+{[['inside','Inside'],['outside','Outside'],['across','Across']].map(([k,l])=>(
+<button key={k} onClick={()=>preset(k)} disabled={!selD} className='btn'
+style={{padding:'7px 14px',borderRadius:'8px',fontSize:'10px',fontWeight:600,background:'var(--bg3)',color:selD?'var(--brass)':'var(--iv3)',border:'1px solid rgba(201,168,76,.15)'}}>{l}</button>))}
+<button onClick={pullAll} disabled={tot===0} className='btn' style={{padding:'7px 14px',borderRadius:'8px',fontSize:'10px',fontWeight:600,background:'var(--bg3)',color:'var(--lred)',border:'1px solid rgba(231,76,60,.15)'}}>Pull Down</button>
+<button onClick={()=>setSelD(null)} className='btn' style={{padding:'7px 14px',borderRadius:'8px',fontSize:'10px',fontWeight:600,background:'var(--bg3)',color:'var(--iv3)',border:'1px solid rgba(255,255,255,.06)'}}>Clear</button>
+</div></div>
+
+{/* Players */}
+<div style={{background:'var(--bg2)',padding:'14px',borderRadius:'14px',border:'1px solid rgba(255,255,255,.06)'}}>
+<div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
+<div style={{fontSize:'10px',color:'var(--brass)',letterSpacing:'2px',textTransform:'uppercase',fontWeight:600}}>Players · {gs.players.length}/6</div>
+<button onClick={()=>{if(window.confirm('Reset table?')){sv(ini());localStorage.removeItem('craps-pid');setPid(null);setJoinM(true)}}} className='btn'
+style={{padding:'3px 10px',borderRadius:'6px',fontSize:'9px',background:'transparent',color:'var(--iv3)',border:'1px solid rgba(255,255,255,.06)'}}>Reset</button>
+</div>
+{gs.po?.map((p,idx)=>{const pl=gs.players.find(x=>x.id===p);if(!pl)return null;const isMe=pl.id===pid;
+return(<div key={pl.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 12px',borderRadius:'8px',marginBottom:'3px',
+background:isMe?'rgba(201,168,76,.06)':'transparent',border:idx===gs.cs?'1px solid rgba(201,168,76,.15)':'1px solid transparent'}}>
+<span style={{fontSize:'13px',fontWeight:isMe?600:400,color:isMe?'var(--iv)':'var(--iv2)'}}>
+{idx===gs.cs&&<span style={{color:'var(--brass)',marginRight:'6px'}}>◆</span>}{pl.name}{isMe&&<span style={{fontSize:'9px',color:'var(--brass)',marginLeft:'6px'}}>you</span>}
+</span>
+<span style={{fontFamily:'var(--fm)',fontSize:'14px',fontWeight:700,color:pl.chips>=START?'var(--grn)':'var(--lred)'}}>${pl.chips}</span>
+</div>)})}
+</div>
+
+<div style={{textAlign:'center',padding:'16px 0',fontSize:'9px',color:'rgba(255,255,255,.1)',letterSpacing:'2px',textTransform:'uppercase',fontFamily:'var(--fm)'}}>The Ivory Room · Est. 2025</div>
+</div>)};
+
 ReactDOM.render(<App/>,document.getElementById('root'));
 </script>
 </body>
