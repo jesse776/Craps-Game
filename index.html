@@ -68,7 +68,7 @@
         .casino-chip::after { content:''; position:absolute; inset:5px; border-radius:50%;
             background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.15), transparent 60%); border:1.5px solid var(--chip-color); }
         .casino-chip.small::after { inset:3px; border-width:1px; }
-        .chip-value { position:relative; z-index:1; color:var(--ivory); font-weight:700; text-shadow:0 1px 3px rgba(0,0,0,0.8); letter-spacing:-0.5px; }
+        .chip-value { position:relative; z-index:1; color:#1a1a1e; font-weight:700; text-shadow:0 1px 1px rgba(255,255,255,0.3); letter-spacing:-0.5px; }
         .chip-selected { box-shadow: 0 0 0 3px var(--brass), 0 0 24px rgba(201,168,76,0.3); transform: translateY(-4px); }
 
         /* Table cell - used for all bet areas on the felt */
@@ -198,10 +198,10 @@ const App = () => {
 
   const preset=(type)=>{const fs=fresh();const pl=fs.players.find(p=>p.id===pid);if(!pl||!selDenom){flash('Select denomination');return;}
     const csid=fs.playerOrder[fs.currentShooter],isCS=pid===csid,pt=fs.point,mb=fs.bets[pid]||{},hasPL=mb.pass>0;let btp=[];
-    const sk=n=>(isCS||hasPL)&&n===pt;
-    if(type==='inside')[5,6,8,9].forEach(n=>{if(!sk(n))btp.push({t:'place'+n});});
-    else if(type==='outside')[4,10].forEach(n=>{if(!sk(n))btp.push({t:'buy'+n});});
-    else if(type==='across')[4,5,6,8,9,10].forEach(n=>{if(!sk(n))btp.push({t:(n===4||n===10?'buy':'place')+n});});
+    const sk=(n)=>{return pt && (isCS||hasPL) && n===pt;};
+    if(type==='inside'){[5,6,8,9].forEach(n=>{if(!sk(n))btp.push({t:'place'+n});});}
+    else if(type==='outside'){[4,10].forEach(n=>{if(!sk(n))btp.push({t:'buy'+n});});}
+    else if(type==='across'){[4,5,6,8,9,10].forEach(n=>{if(!sk(n))btp.push({t:(n===4||n===10?'buy':'place')+n});});}
     if(!btp.length){flash('All covered');return;}const tc=selDenom*btp.length;if(pl.chips<tc){flash('Need $'+tc);return;}
     const up=fs.players.map(p=>p.id===pid?{...p,chips:p.chips-tc}:p);const nb={...mb};btp.forEach(b=>{nb[b.t]=(nb[b.t]||0)+selDenom;});
     save({...fs,players:up,bets:{...fs.bets,[pid]:nb}});flash(type+': $'+tc);};
@@ -367,9 +367,9 @@ const App = () => {
 
   // ====== MAIN TABLE ======
   return(
-    <div style={{minHeight:'100vh',background:'var(--felt-deep)',position:'relative'}}>
-      {/* Full green felt background */}
-      <div className="felt-bg" style={{position:'fixed',inset:0,zIndex:0}}/>
+    <div style={{minHeight:'100vh',background:'var(--bg-deep)',position:'relative'}}>
+      {/* Subtle gradient background */}
+      <div style={{position:'fixed',inset:0,zIndex:0,background:'linear-gradient(160deg, #0c0c0e 0%, #12121a 40%, #0e0e12 100%)'}}/>
 
       <div style={{position:'relative',zIndex:1,padding:'12px',maxWidth:'920px',margin:'0 auto'}}>
 
@@ -385,11 +385,11 @@ const App = () => {
 
         {/* Dealer call */}
         {dcall&&(<div className="dealer-banner" style={{position:'fixed',top:'14px',left:'50%',zIndex:1000,
-          background:'rgba(12,12,14,0.9)',backdropFilter:'blur(8px)',color:'var(--brass)',padding:'10px 28px',borderRadius:'100px',
-          fontSize:'17px',fontWeight:500,fontFamily:'var(--font-display)',fontStyle:'italic',border:'1px solid rgba(201,168,76,0.15)',boxShadow:'var(--shadow-lg)'}}>{dcall}</div>)}
+          background:'rgba(12,12,14,0.9)',backdropFilter:'blur(8px)',color:'var(--brass)',padding:'14px 36px',borderRadius:'100px',
+          fontSize:'21px',fontWeight:500,fontFamily:'var(--font-display)',fontStyle:'italic',border:'1px solid rgba(201,168,76,0.15)',boxShadow:'var(--shadow-lg)'}}>{dcall}</div>)}
 
         {/* Header bar */}
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 16px',background:'rgba(0,0,0,0.35)',backdropFilter:'blur(6px)',borderRadius:'12px',marginBottom:'10px',border:'1px solid rgba(255,255,255,0.06)',flexWrap:'wrap',gap:'10px'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px 16px',background:'var(--bg-card)',borderRadius:'12px',marginBottom:'10px',border:'1px solid rgba(255,255,255,0.06)',flexWrap:'wrap',gap:'10px'}}>
           <div>
             <div style={{fontFamily:'var(--font-display)',fontSize:'20px',fontWeight:600,color:'var(--ivory)'}}>The Ivory Room</div>
             <div style={{fontFamily:'var(--font-mono)',fontSize:'9px',color:'var(--ivory-muted)',letterSpacing:'1px'}}>MIN $15 \u00b7 ODDS 3-4-5\u00d7 \u00b7 BUY 5% VIG</div>
@@ -399,7 +399,7 @@ const App = () => {
               <div style={{fontSize:'9px',color:'var(--ivory-muted)',letterSpacing:'1px',textTransform:'uppercase'}}>{cp.name}</div>
               <div style={{fontFamily:'var(--font-mono)',fontSize:'22px',fontWeight:700,color:cp.chips>=START?'var(--green-win)':'var(--loss-red)',letterSpacing:'-1px'}}>${cp.chips}</div>
             </div>
-            <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'8px 12px',background:'rgba(0,0,0,0.2)',borderRadius:'8px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:'10px',padding:'8px 12px',background:'var(--bg-elevated)',borderRadius:'8px'}}>
               <div className={'puck-marker '+(gs.phase==='comeout'?'off':'on')}>{gs.phase==='comeout'?'OFF':'ON'}</div>
               <div>
                 {gs.phase==='comeout'?<div style={{fontSize:'11px',color:'var(--ivory-dim)'}}>Come Out</div>:
@@ -412,16 +412,16 @@ const App = () => {
         {/* Shooter info */}
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 16px',marginBottom:'8px',flexWrap:'wrap',gap:'6px'}}>
           <div style={{fontSize:'12px',color:'var(--ivory-dim)'}}>Shooter: <span style={{color:isShooter?'var(--brass)':'var(--ivory)',fontWeight:600}}>{sname}{isShooter?' (you)':''}</span></div>
-          {gs.lastTotal&&<div style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--ivory-muted)',background:'rgba(0,0,0,0.2)',padding:'3px 8px',borderRadius:'4px'}}>Last: {gs.lastTotal}</div>}
+          {gs.lastTotal&&<div style={{fontFamily:'var(--font-mono)',fontSize:'11px',color:'var(--ivory-muted)',background:'var(--bg-elevated)',padding:'3px 8px',borderRadius:'4px'}}>Last: {gs.lastTotal}</div>}
           {cp.chips<TMIN&&<button onClick={rebuy} className="btn" style={{padding:'4px 12px',borderRadius:'6px',fontSize:'10px',background:'var(--brass)',color:'var(--bg-deep)',fontWeight:700}}>Rebuy</button>}
         </div>
 
-        {msg&&<div style={{padding:'8px 14px',borderRadius:'8px',marginBottom:'8px',textAlign:'center',fontSize:'12px',fontWeight:500,background:'rgba(0,0,0,0.3)',border:'1px solid rgba(201,168,76,0.12)',color:'var(--brass)',backdropFilter:'blur(4px)'}}>{msg}</div>}
+        {msg&&<div style={{padding:'8px 14px',borderRadius:'8px',marginBottom:'8px',textAlign:'center',fontSize:'12px',fontWeight:500,background:'rgba(201,168,76,0.06)',border:'1px solid rgba(201,168,76,0.12)',color:'var(--brass)',backdropFilter:'blur(4px)'}}>{msg}</div>}
         {dragging&&<div className="drop-zone" onDragOver={dzOver} onDragLeave={dzLeave} onDrop={dzDrop} style={{marginBottom:'8px'}}><div style={{fontSize:'12px',color:'var(--brass)',letterSpacing:'1px'}}>Return to Rack</div></div>}
 
         {/* ======= THE TABLE LAYOUT ======= */}
         {/* Modeled after real craps felt: Pass Line wraps the outside, then DP, then numbers, come, field, props in center */}
-        <div style={{borderRadius:'20px',overflow:'hidden',border:'6px solid var(--rail)',boxShadow:'inset 0 2px 30px rgba(0,0,0,0.4), 0 4px 30px rgba(0,0,0,0.5), 0 0 0 2px var(--rail-edge)',marginBottom:'10px',background:'rgba(0,0,0,0.15)'}}>
+        <div className="felt-bg" style={{borderRadius:'20px',overflow:'hidden',border:'6px solid var(--rail)',boxShadow:'inset 0 2px 30px rgba(0,0,0,0.4), 0 4px 30px rgba(0,0,0,0.5), 0 0 0 2px var(--rail-edge)',marginBottom:'10px'}}>
 
           {/* === ROW 1: Don't Come Bar + Number boxes === */}
           <div style={{display:'grid',gridTemplateColumns:'1fr repeat(6, 1fr)',gap:0}}>
@@ -491,7 +491,7 @@ const App = () => {
         )}
 
         {/* Dice */}
-        <div style={{background:'rgba(0,0,0,0.3)',backdropFilter:'blur(6px)',padding:'20px',borderRadius:'14px',marginBottom:'10px',textAlign:'center',border:'1px solid rgba(255,255,255,0.06)'}}>
+        <div style={{background:'var(--bg-card)',padding:'20px',borderRadius:'14px',marginBottom:'10px',textAlign:'center',border:'1px solid rgba(255,255,255,0.06)'}}>
           <div style={{display:'flex',justifyContent:'center',gap:'14px',marginBottom:'16px'}}><Die value={dice.die1}/><Die value={dice.die2}/></div>
           {isShooter?(<button onClick={roll} disabled={rolling} className="btn"
             style={{width:'100%',maxWidth:'340px',padding:'14px',borderRadius:'12px',fontSize:'15px',fontWeight:700,letterSpacing:'1px',textTransform:'uppercase',
@@ -502,21 +502,21 @@ const App = () => {
         </div>
 
         {/* Chips & Actions */}
-        <div style={{background:'rgba(0,0,0,0.3)',backdropFilter:'blur(6px)',padding:'14px',borderRadius:'14px',marginBottom:'10px',border:'1px solid rgba(255,255,255,0.06)'}}>
+        <div style={{background:'var(--bg-card)',padding:'14px',borderRadius:'14px',marginBottom:'10px',border:'1px solid rgba(255,255,255,0.06)'}}>
           <div style={{display:'flex',gap:'10px',justifyContent:'center',marginBottom:'12px'}}>
             {CHIPS.map(ci=>(<Chip key={ci.value} ci={ci} onClick={c=>setSelDenom(c.value)} disabled={cp.chips<ci.value} selected={selDenom===ci.value}/>))}
           </div>
           <div style={{display:'flex',gap:'6px',justifyContent:'center',flexWrap:'wrap'}}>
             {[['inside','Inside'],['outside','Outside'],['across','Across']].map(([k,l])=>(
               <button key={k} onClick={()=>preset(k)} disabled={!selDenom} className="btn"
-                style={{padding:'7px 14px',borderRadius:'8px',fontSize:'10px',fontWeight:600,background:'rgba(0,0,0,0.3)',color:selDenom?'var(--brass)':'var(--ivory-muted)',border:'1px solid rgba(201,168,76,0.15)'}}>{l}</button>))}
-            <button onClick={pullAll} disabled={tot===0} className="btn" style={{padding:'7px 14px',borderRadius:'8px',fontSize:'10px',fontWeight:600,background:'rgba(0,0,0,0.3)',color:'var(--loss-red)',border:'1px solid rgba(231,76,60,0.15)'}}>Pull Down</button>
-            <button onClick={()=>setSelDenom(null)} className="btn" style={{padding:'7px 14px',borderRadius:'8px',fontSize:'10px',fontWeight:600,background:'rgba(0,0,0,0.3)',color:'var(--ivory-muted)',border:'1px solid rgba(255,255,255,0.06)'}}>Clear</button>
+                style={{padding:'7px 14px',borderRadius:'8px',fontSize:'10px',fontWeight:600,background:'var(--bg-elevated)',color:selDenom?'var(--brass)':'var(--ivory-muted)',border:'1px solid rgba(201,168,76,0.15)'}}>{l}</button>))}
+            <button onClick={pullAll} disabled={tot===0} className="btn" style={{padding:'7px 14px',borderRadius:'8px',fontSize:'10px',fontWeight:600,background:'var(--bg-elevated)',color:'var(--loss-red)',border:'1px solid rgba(231,76,60,0.15)'}}>Pull Down</button>
+            <button onClick={()=>setSelDenom(null)} className="btn" style={{padding:'7px 14px',borderRadius:'8px',fontSize:'10px',fontWeight:600,background:'var(--bg-elevated)',color:'var(--ivory-muted)',border:'1px solid rgba(255,255,255,0.06)'}}>Clear</button>
           </div>
         </div>
 
         {/* Players */}
-        <div style={{background:'rgba(0,0,0,0.3)',backdropFilter:'blur(6px)',padding:'14px',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.06)'}}>
+        <div style={{background:'var(--bg-card)',padding:'14px',borderRadius:'14px',border:'1px solid rgba(255,255,255,0.06)'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'10px'}}>
             <div style={{fontSize:'10px',color:'var(--brass)',letterSpacing:'2px',textTransform:'uppercase',fontWeight:600}}>Players \u00b7 {gs.players.length}/6</div>
             <button onClick={()=>{if(window.confirm('Reset table?')){save(init());localStorage.removeItem('craps-player-id');setPid(null);setJoinModal(true);}}} className="btn"
