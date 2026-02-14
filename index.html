@@ -68,7 +68,7 @@
         .casino-chip::after { content:''; position:absolute; inset:5px; border-radius:50%;
             background: radial-gradient(ellipse at 30% 30%, rgba(255,255,255,0.15), transparent 60%); border:1.5px solid var(--chip-color); }
         .casino-chip.small::after { inset:3px; border-width:1px; }
-        .chip-value { position:relative; z-index:1; color:#1a1a1e; font-weight:700; text-shadow:0 1px 1px rgba(255,255,255,0.3); letter-spacing:-0.5px; }
+        .chip-value { position:relative; z-index:1; color:#1a1a1e; font-weight:700; text-shadow:0 1px 1px rgba(255,255,255,0.4); letter-spacing:-0.5px; }
         .chip-selected { box-shadow: 0 0 0 3px var(--brass), 0 0 24px rgba(201,168,76,0.3); transform: translateY(-4px); }
 
         /* Table cell - used for all bet areas on the felt */
@@ -180,8 +180,8 @@ const App = () => {
     const pl=fs.players.find(p=>p.id===pid);if(!pl)return;if(pl.chips<ba){flash('Insufficient chips');return;}
     if(bt==='passodds'&&fs.point){const plb=fs.bets[pid]?.pass||0;if(!plb){flash('Pass bet first');return;}if((fs.bets[pid]?.passodds||0)+ba>maxOdds(fs.point,plb)){flash('Max odds exceeded');return;}}
     if(bt==='dontpassodds'&&fs.point){const dpb=fs.bets[pid]?.dontpass||0;if(!dpb){flash('DP bet first');return;}if((fs.bets[pid]?.dontpassodds||0)+ba>maxOdds(fs.point,dpb)){flash('Max odds exceeded');return;}}
-    if(['pass','dontpass'].includes(bt)&&ba<TMIN){flash('Min $'+TMIN);return;}
-    if(['come','dontcome'].includes(bt)&&ba<TMIN){flash('Min $'+TMIN);return;}
+    if(['pass','dontpass'].includes(bt)&&ba<TMIN){const cur=(fs.bets[pid]||{})[bt]||0;if(cur===0){flash('Min $'+TMIN+' on first bet');return;}}
+    if(['come','dontcome'].includes(bt)&&ba<TMIN){const cur=(fs.bets[pid]||{})[bt]||0;if(cur===0){flash('Min $'+TMIN+' on first bet');return;}}
     if(ba<PMIN){flash('Min $'+PMIN);return;}
     if(fs.phase==='point'&&['pass','dontpass'].includes(bt)&&!(fs.bets[pid]||{})[bt]){flash('Come out only');return;}
     if(['come','dontcome'].includes(bt)&&fs.phase!=='point'){flash('Point phase only');return;}
@@ -288,22 +288,37 @@ const App = () => {
     return(<div className="die-face" style={{width:68,height:68,position:'relative'}}>{dp[value].map((p,i)=>(<div key={i} className="die-pip" style={{position:'absolute',left:p[0]+'%',top:p[1]+'%',transform:'translate(-50%,-50%)'}}/>))}</div>);
   };
 
+  // Bet stack: chip icon + $amount + player name
+  const BetStack=({bt})=>{
+    const ab=gs?.bets||{};const stacks=[];
+    (gs?.players||[]).forEach(p=>{const pb=ab[p.id]?.[bt];if(!pb)return;stacks.push({player:p,amount:pb,isMe:p.id===pid});});
+    if(!stacks.length)return null;
+    return(<div style={{display:'flex',gap:'4px',flexWrap:'wrap',justifyContent:'center',zIndex:3,position:'relative'}}>
+      {stacks.map(s=>{const ci=chipFor(s.amount);
+        return(<div key={s.player.id} style={{display:'flex',alignItems:'center',gap:'3px',padding:'3px 6px',borderRadius:'6px',
+          background:s.isMe?'rgba(201,168,76,0.2)':'rgba(0,0,0,0.45)',border:s.isMe?'1px solid var(--brass-dim)':'1px solid rgba(255,255,255,0.08)',
+          cursor:s.isMe?'grab':'default',backdropFilter:'blur(2px)'}}
+          draggable={s.isMe} onDragStart={e=>{if(s.isMe){setDragging(true);setDragBet(bt);e.dataTransfer.effectAllowed='move';}}}
+          onDragEnd={()=>{setDragging(false);setDragBet(null);}}>
+          <div style={{width:'22px',height:'22px',borderRadius:'50%',background:ci.color,border:'1.5px solid rgba(255,255,255,0.3)',
+            boxShadow:'0 1px 3px rgba(0,0,0,0.4)',flexShrink:0}}/>
+          <div style={{display:'flex',flexDirection:'column',lineHeight:1.1}}>
+            <span style={{fontFamily:'var(--font-mono)',fontSize:'10px',fontWeight:700,color:'var(--ivory)'}}>${s.amount}</span>
+            <span style={{fontSize:'8px',fontWeight:600,color:s.isMe?'var(--brass)':'var(--ivory-muted)'}}>{s.player.name.substring(0,6)}</span>
+          </div>
+        </div>);})}
+    </div>);
+  };
+
   // Table cell with bets display
   const TC=({bt,label,sub,isOff,style={},labelStyle={}})=>{
     const ab=gs?.bets||{};
-    const myBet=ab[pid]?.[bt];
-    return(<div onClick={()=>selDenom&&placeBet(bt,label)} className={'tcell'+(isOff?' off':'')} style={style}>
+    const hasBets=gs?.players.some(p=>(ab[p.id]||{})[bt]);
+    return(<div onClick={()=>selDenom&&placeBet(bt,label)} className={'tcell'+(isOff?' off':'')} style={{...style,overflow:'visible'}}>
       <div className="tcell-label" style={{fontSize:'13px',...labelStyle}}>{label}</div>
       {sub&&<div className="tcell-sub">{sub}</div>}
-      {isOff&&<div className="tcell-off-tag">off</div>}
-      <div className="bet-chips-row">
-        {gs?.players.map(p=>{const pb=ab[p.id]?.[bt];if(!pb)return null;const isMe=p.id===pid;const ci=chipFor(pb);
-          return(<div key={p.id} style={{display:'flex',alignItems:'center',gap:'2px',background:isMe?'rgba(201,168,76,0.25)':'rgba(0,0,0,0.4)',padding:'2px 4px',borderRadius:'4px',border:isMe?'1px solid var(--brass-dim)':'1px solid rgba(255,255,255,0.08)'}}>
-            <Chip ci={ci} onClick={()=>{}} disabled={false} small={true} isDrag={isMe}
-              onDS={e=>{setDragging(true);setDragBet(bt);e.dataTransfer.effectAllowed='move';}} onDE={()=>{setDragging(false);setDragBet(null);}}/>
-            <span style={{fontSize:'8px',color:'var(--brass)',fontFamily:'var(--font-mono)',fontWeight:700}}>${pb}</span>
-          </div>);})}
-      </div>
+      {isOff&&!hasBets&&<div style={{fontSize:'7px',color:'rgba(255,255,255,0.35)',letterSpacing:'2px',textTransform:'uppercase'}}>off</div>}
+      {hasBets&&<div style={{marginTop:'3px'}}><BetStack bt={bt}/></div>}
     </div>);
   };
 
@@ -367,9 +382,7 @@ const App = () => {
 
   // ====== MAIN TABLE ======
   return(
-    <div style={{minHeight:'100vh',background:'var(--bg-deep)',position:'relative'}}>
-      {/* Subtle gradient background */}
-      <div style={{position:'fixed',inset:0,zIndex:0,background:'linear-gradient(160deg, #0c0c0e 0%, #12121a 40%, #0e0e12 100%)'}}/>
+    <div style={{minHeight:'100vh',background:'linear-gradient(160deg, #0c0c0e 0%, #12121a 40%, #0e0e12 100%)',position:'relative'}}>
 
       <div style={{position:'relative',zIndex:1,padding:'12px',maxWidth:'920px',margin:'0 auto'}}>
 
@@ -427,23 +440,21 @@ const App = () => {
           <div style={{display:'grid',gridTemplateColumns:'1fr repeat(6, 1fr)',gap:0}}>
             <TC bt="dontcome" label="DON'T COME" sub="Bar 12" style={{borderRadius:'0',minHeight:'60px'}} labelStyle={{fontSize:'10px',letterSpacing:'0.5px'}}/>
             {[4,5,6,8,9,10].map(num=>(
-              <div key={num} style={{position:'relative'}}>
-                <div onClick={()=>selDenom&&placeBet('place'+num,'Place '+num)} className={'tcell'+(bOff?' off':'')}
-                  style={{borderRadius:0,minHeight:'80px',borderLeft:'none',cursor:'pointer',background:gs.point===num?'rgba(255,255,255,0.06)':''}}>
-                  <div style={{fontFamily:'var(--font-display)',fontSize:num===6||num===9?'26px':'32px',fontWeight:700,color:'var(--ivory)',
-                    fontStyle:num===6||num===9?'italic':'normal',textShadow:'2px 2px 4px rgba(0,0,0,0.5)',position:'relative',zIndex:1}}>
-                    {num===6?'Six':num===9?'Nine':num}
+              <div key={num} style={{position:"relative"}}>
+                <div onClick={()=>selDenom&&placeBet("place"+num,"Place "+num)} className={"tcell"+(bOff?" off":"")}
+                  style={{borderRadius:0,minHeight:"80px",borderLeft:"none",cursor:"pointer",background:gs.point===num?"rgba(255,255,255,0.06)":"",overflow:"visible"}}>
+                  <div style={{fontFamily:"var(--font-display)",fontSize:num===6||num===9?"26px":"32px",fontWeight:700,color:"var(--ivory)",
+                    fontStyle:num===6||num===9?"italic":"normal",textShadow:"2px 2px 4px rgba(0,0,0,0.5)",position:"relative",zIndex:1}}>
+                    {num===6?"Six":num===9?"Nine":num}
                   </div>
-                  <div className="bet-chips-row">
-                    {gs?.players.map(p=>{const pb=(gs.bets[p.id]||{})['place'+num];if(!pb)return null;const isMe=p.id===pid;
-                      return(<div key={p.id} style={{fontSize:'8px',padding:'1px 3px',borderRadius:'3px',background:isMe?'rgba(201,168,76,0.3)':'rgba(0,0,0,0.4)',color:'var(--brass)',fontFamily:'var(--font-mono)',fontWeight:700,border:isMe?'1px solid var(--brass-dim)':'none'}}>${pb}</div>);})}
-                  </div>
-                  {bOff&&<div className="tcell-off-tag" style={{position:'absolute',bottom:'2px'}}>off</div>}
+                  <BetStack bt={"place"+num}/>
+                  {bOff&&!gs?.players.some(p=>(gs.bets[p.id]||{})["place"+num])&&<div style={{fontSize:"7px",color:"rgba(255,255,255,0.35)",letterSpacing:"2px",textTransform:"uppercase",position:"absolute",bottom:"2px"}}>off</div>}
                 </div>
                 <ComeBetsOn num={num}/>
-                {gs.point===num&&<div className="puck-marker on" style={{position:'absolute',top:'2px',right:'2px',width:'24px',height:'24px',fontSize:'7px',zIndex:5}}>ON</div>}
+                {gs.point===num&&<div className="puck-marker on" style={{position:"absolute",top:"2px",right:"2px",width:"24px",height:"24px",fontSize:"7px",zIndex:5}}>ON</div>}
               </div>
             ))}
+          </div>
           </div>
 
           {/* === ROW 2: Buy bets under numbers === */}
@@ -475,20 +486,20 @@ const App = () => {
           {/* === ROW 6: Any Seven === */}
           <TC bt="anySeven" label="ANY SEVEN" sub="4:1" style={{borderRadius:0,minHeight:'38px',borderTop:'none'}} labelStyle={{fontSize:'11px',letterSpacing:'2px'}}/>
 
-          {/* === ROW 7: DON'T PASS BAR === */}
+          {/* === ROW 7: ODDS (only shown when point is set) === */}
+          {gs.point&&(
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:0}}>
+              <TC bt="passodds" label="PASS ODDS" style={{borderRadius:0,minHeight:'44px',borderTop:'none',background:'rgba(46,204,113,0.06)'}} labelStyle={{fontSize:'11px'}}/>
+              <TC bt="dontpassodds" label="DP ODDS" style={{borderRadius:0,minHeight:'44px',borderTop:'none',borderLeft:'none',background:'rgba(46,204,113,0.06)'}} labelStyle={{fontSize:'11px'}}/>
+            </div>
+          )}
+
+          {/* === DON'T PASS BAR === */}
           <TC bt="dontpass" label="DON'T PASS BAR" sub="Bar 12" style={{borderRadius:0,minHeight:'44px',borderTop:'none'}} labelStyle={{fontSize:'12px',letterSpacing:'1px'}}/>
 
-          {/* === ROW 8: PASS LINE === */}
+          {/* === PASS LINE === */}
           <TC bt="pass" label="PASS LINE" style={{borderRadius:'0 0 14px 14px',minHeight:'58px',borderTop:'none',background:'rgba(255,255,255,0.03)'}} labelStyle={{fontSize:'22px',fontFamily:'var(--font-display)',fontWeight:700,letterSpacing:'3px'}}/>
         </div>
-
-        {/* Odds bets - shown when point is set */}
-        {gs.point&&(
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'10px'}}>
-            <TC bt="passodds" label="PASS ODDS" style={{borderRadius:'8px',minHeight:'44px',background:'rgba(46,204,113,0.06)',borderColor:'rgba(46,204,113,0.2)'}} labelStyle={{fontSize:'11px'}}/>
-            <TC bt="dontpassodds" label="DP ODDS" style={{borderRadius:'8px',minHeight:'44px',background:'rgba(46,204,113,0.06)',borderColor:'rgba(46,204,113,0.2)'}} labelStyle={{fontSize:'11px'}}/>
-          </div>
-        )}
 
         {/* Dice */}
         <div style={{background:'var(--bg-card)',padding:'20px',borderRadius:'14px',marginBottom:'10px',textAlign:'center',border:'1px solid rgba(255,255,255,0.06)'}}>
