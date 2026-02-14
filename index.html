@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vegas Craps Table</title>
+    <title>Vegas Craps Table - Online Multiplayer</title>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -14,219 +14,95 @@
             background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
             overflow-x: hidden;
         }
-        
-        /* Casino Chip Styling */
         .casino-chip {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 13px;
-            cursor: pointer;
-            transition: transform 0.2s;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            width: 50px; height: 50px; border-radius: 50%; position: relative;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 13px; cursor: pointer;
+            transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.4);
         }
-        
-        .casino-chip.small {
-            width: 35px;
-            height: 35px;
-            font-size: 11px;
-        }
-        
+        .casino-chip.small { width: 35px; height: 35px; font-size: 11px; }
         .casino-chip:hover { transform: scale(1.1); }
         .casino-chip:active { transform: scale(0.95); }
-        .casino-chip.dragging { 
-            opacity: 0.5; 
-            cursor: grabbing !important;
-        }
-        
+        .casino-chip.dragging { opacity: 0.5; cursor: grabbing !important; }
         .casino-chip::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: 50%;
-            padding: 3px;
-            background: repeating-conic-gradient(
-                from 0deg,
-                var(--chip-color) 0deg 18deg,
-                white 18deg 36deg
-            );
+            content: ''; position: absolute; inset: 0; border-radius: 50%; padding: 3px;
+            background: repeating-conic-gradient(from 0deg, var(--chip-color) 0deg 18deg, white 18deg 36deg);
             -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-            -webkit-mask-composite: xor;
-            mask-composite: exclude;
+            -webkit-mask-composite: xor; mask-composite: exclude;
         }
-        
         .casino-chip::after {
-            content: '';
-            position: absolute;
-            inset: 6px;
-            border-radius: 50%;
-            background: white;
-            border: 2px solid var(--chip-color);
+            content: ''; position: absolute; inset: 6px; border-radius: 50%;
+            background: white; border: 2px solid var(--chip-color);
         }
-        
-        .casino-chip.small::after {
-            inset: 4px;
-            border: 1px solid var(--chip-color);
-        }
-        
-        .chip-value {
-            position: relative;
-            z-index: 1;
-            color: #000;
-            font-weight: 900;
-            text-shadow: 0 1px 2px rgba(255,255,255,0.5);
-        }
-        
-        .chip-selected {
-            box-shadow: 0 0 0 4px #ffd700, 0 4px 8px rgba(0,0,0,0.4);
-            transform: scale(1.15);
-        }
-        
-        /* Craps Table Felt Green */
-        .felt-green {
-            background: linear-gradient(135deg, #0d5c0d 0%, #1a8b1a 50%, #0d5c0d 100%);
-        }
-        
-        /* Table Layout Boxes */
+        .casino-chip.small::after { inset: 4px; border: 1px solid var(--chip-color); }
+        .chip-value { position: relative; z-index: 1; color: #000; font-weight: 900; text-shadow: 0 1px 2px rgba(255,255,255,0.5); }
+        .chip-selected { box-shadow: 0 0 0 4px #ffd700, 0 4px 8px rgba(0,0,0,0.4); transform: scale(1.15); }
+        .felt-green { background: linear-gradient(135deg, #0d5c0d 0%, #1a8b1a 50%, #0d5c0d 100%); }
         .bet-box {
-            border: 2px solid #ffd700;
-            background: rgba(255, 255, 255, 0.05);
-            position: relative;
-            cursor: pointer;
-            transition: all 0.2s;
-            padding: 4px;
+            border: 2px solid #ffd700; background: rgba(255, 255, 255, 0.05);
+            position: relative; cursor: pointer; transition: all 0.2s; padding: 4px;
         }
-        
-        .bet-box:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: #fff;
-        }
-        
-        .bet-box.off {
-            opacity: 0.5;
-            border-color: #666;
-        }
-
-        /* Drop zone for chips */
+        .bet-box:hover { background: rgba(255, 255, 255, 0.15); border-color: #fff; }
+        .bet-box.off { opacity: 0.5; border-color: #666; }
         .drop-zone {
-            border: 3px dashed #ffd700;
-            background: rgba(255, 215, 0, 0.1);
-            border-radius: 10px;
-            padding: 20px;
-            text-align: center;
-            transition: all 0.3s;
+            border: 3px dashed #ffd700; background: rgba(255, 215, 0, 0.1);
+            border-radius: 10px; padding: 20px; text-align: center; transition: all 0.3s;
         }
-
-        .drop-zone.drag-over {
-            background: rgba(255, 215, 0, 0.3);
-            border-color: #fff;
-            transform: scale(1.02);
-        }
-        
-        /* Dice styling */
+        .drop-zone.drag-over { background: rgba(255, 215, 0, 0.3); border-color: #fff; transform: scale(1.02); }
         .die {
             background: linear-gradient(145deg, #ffffff, #f0f0f0);
-            box-shadow: 
-                0 0 0 2px #000,
-                2px 2px 4px rgba(0,0,0,0.3),
-                inset -2px -2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 0 0 2px #000, 2px 2px 4px rgba(0,0,0,0.3), inset -2px -2px 4px rgba(0,0,0,0.1);
             border-radius: 8px;
         }
-        
-        .die-dot {
-            width: 10px;
-            height: 10px;
-            background: #000;
-            border-radius: 50%;
-        }
-
-        /* Win/Loss Animation */
-        @keyframes winPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        @keyframes slideIn {
-            from { 
-                opacity: 0;
-                transform: translateY(-50px) scale(0.5);
-            }
-            to { 
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-
-        .win-loss-display {
-            animation: slideIn 0.3s ease-out, winPulse 0.6s ease-in-out;
-        }
-
-        /* Puck styling */
+        .die-dot { width: 10px; height: 10px; background: #000; border-radius: 50%; }
+        @keyframes winPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-50px) scale(0.5); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .win-loss-display { animation: slideIn 0.3s ease-out, winPulse 0.6s ease-in-out; }
         .puck {
-            width: 45px;
-            height: 45px;
-            border-radius: 50%;
-            border: 4px solid #000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 12px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+            width: 45px; height: 45px; border-radius: 50%; border: 4px solid #000;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 12px; box-shadow: 0 4px 8px rgba(0,0,0,0.4);
         }
-
-        .puck.on {
-            background: white;
-            color: black;
-        }
-
-        .puck.off {
-            background: black;
-            color: white;
-        }
-
-        /* Craps table shape - bathtub/oval */
-        .craps-table-container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* Chip rack styling */
+        .puck.on { background: white; color: black; }
+        .puck.off { background: black; color: white; }
+        .craps-table-container { max-width: 1400px; margin: 0 auto; }
         .chip-rack {
             background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
-            border: 3px solid #8b4513;
-            border-radius: 10px;
-            padding: 15px;
+            border: 3px solid #8b4513; border-radius: 10px; padding: 15px;
             box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
         }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .online-dot { width: 10px; height: 10px; border-radius: 50%; background: #00ff00; display: inline-block; animation: pulse-dot 2s infinite; margin-right: 6px; }
+        .loading-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; color: white; gap: 20px; }
+        .loading-spinner { width: 50px; height: 50px; border: 4px solid rgba(255,215,0,0.3); border-top: 4px solid #ffd700; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div id="root"></div>
-
     <script type="text/babel">
-        const { useState, useEffect, useRef } = React;
+        const { useState, useEffect, useRef, useCallback } = React;
 
-        const STORAGE_KEY = 'craps-game-' + (window.location.hash.slice(1) || 'default');
+        const TABLE_KEY = 'craps-table-v2';
 
         const CrapsGame = () => {
           const [gameState, setGameState] = useState(null);
-          const [playerId, setPlayerId] = useState(localStorage.getItem('craps-player-id'));
+          const [playerId, setPlayerId] = useState(null);
           const [playerName, setPlayerName] = useState('');
           const [selectedDenomination, setSelectedDenomination] = useState(null);
           const [isRolling, setIsRolling] = useState(false);
           const [diceValues, setDiceValues] = useState({ die1: 1, die2: 1 });
-          const [showJoinModal, setShowJoinModal] = useState(!playerId);
+          const [showJoinModal, setShowJoinModal] = useState(true);
           const [message, setMessage] = useState('');
           const [dealerCall, setDealerCall] = useState('');
           const [winLossDisplay, setWinLossDisplay] = useState(null);
           const [isDraggingChip, setIsDraggingChip] = useState(false);
           const [draggedBetType, setDraggedBetType] = useState(null);
+          const [isLoading, setIsLoading] = useState(true);
+          const [connectionStatus, setConnectionStatus] = useState('connecting');
+          const [lastRollId, setLastRollId] = useState(null);
+          const rollLockRef = useRef(false);
+          const playerIdRef = useRef(null);
 
           const CHIP_VALUES = [
             { value: 1, color: '#ffffff', name: 'White' },
@@ -235,63 +111,125 @@
             { value: 25, color: '#00aa00', name: 'Green' },
             { value: 50, color: '#ff6600', name: 'Orange' }
           ];
-          
-          const TABLE_MIN = 15;
-          const PROP_MIN = 1;
-          const STARTING_CHIPS = 250;
-          const MAX_PLAYERS = 6;
+          const TABLE_MIN = 15, PROP_MIN = 1, STARTING_CHIPS = 250, MAX_PLAYERS = 6;
 
-          useEffect(() => {
-            const loadInterval = setInterval(() => {
-              loadGameState();
-            }, 1000);
-            loadGameState();
-            return () => clearInterval(loadInterval);
-          }, []);
-
-          const loadGameState = () => {
+          // === SHARED STORAGE LAYER ===
+          const loadFromServer = async () => {
             try {
-              const stored = localStorage.getItem(STORAGE_KEY);
-              if (stored) {
-                const state = JSON.parse(stored);
+              const result = await window.storage.get(TABLE_KEY, true);
+              if (result && result.value) {
+                const state = JSON.parse(result.value);
                 setGameState(state);
-                if (state.lastDice) {
-                  setDiceValues(state.lastDice);
+                setConnectionStatus('connected');
+                if (state.lastDice) setDiceValues(state.lastDice);
+                if (state.lastDealerCall) setDealerCall(state.lastDealerCall);
+                // Detect new rolls from other players
+                if (state.rollId && state.rollId !== lastRollId) {
+                  setLastRollId(state.rollId);
+                  if (state.lastRollResult && playerIdRef.current && state.lastRollShooter !== playerIdRef.current) {
+                    const myNet = (state.lastRollResult.payouts?.[playerIdRef.current] || 0) - (state.lastRollResult.losses?.[playerIdRef.current] || 0);
+                    if (myNet > 0) { setWinLossDisplay({ playerId: playerIdRef.current, amount: myNet, type: 'win' }); setTimeout(() => setWinLossDisplay(null), 3000); }
+                    else if (myNet < 0) { setWinLossDisplay({ playerId: playerIdRef.current, amount: Math.abs(myNet), type: 'loss' }); setTimeout(() => setWinLossDisplay(null), 3000); }
+                    if (state.lastRollMessage) setMessage(state.lastRollMessage);
+                  }
                 }
-                if (state.lastDealerCall) {
-                  setDealerCall(state.lastDealerCall);
+                return state;
+              }
+              return null;
+            } catch (e) {
+              console.error('Load error:', e);
+              setConnectionStatus('error');
+              return null;
+            }
+          };
+
+          const saveToServer = async (newState) => {
+            try {
+              const result = await window.storage.set(TABLE_KEY, JSON.stringify(newState), true);
+              if (result) { setGameState(newState); setConnectionStatus('connected'); return true; }
+              setConnectionStatus('error');
+              return false;
+            } catch (e) {
+              console.error('Save error:', e);
+              setConnectionStatus('error');
+              return false;
+            }
+          };
+
+          const getFreshState = async () => {
+            const state = await loadFromServer();
+            return state || gameState;
+          };
+
+          // Init: load or create table
+          useEffect(() => {
+            const init = async () => {
+              setIsLoading(true);
+              try {
+                let state = await loadFromServer();
+                if (!state) {
+                  const newGame = initializeGame();
+                  await saveToServer(newGame);
+                  state = newGame;
                 }
-              } else {
+                setGameState(state);
+                // Check if player already exists
+                const storedPid = sessionStorage.getItem('craps-player-id');
+                if (storedPid && state.players.find(p => p.id === storedPid)) {
+                  setPlayerId(storedPid);
+                  playerIdRef.current = storedPid;
+                  setShowJoinModal(false);
+                }
+              } catch (e) {
+                console.error('Init error:', e);
                 const newGame = initializeGame();
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(newGame));
                 setGameState(newGame);
               }
-            } catch (error) {
-              console.error('Error loading game:', error);
-            }
-          };
+              setIsLoading(false);
+            };
+            init();
+          }, []);
+
+          // Poll for updates
+          useEffect(() => {
+            const interval = setInterval(() => {
+              if (!rollLockRef.current) loadFromServer();
+            }, 1500);
+            return () => clearInterval(interval);
+          }, [lastRollId]);
+
+          // Heartbeat: keep player alive
+          useEffect(() => {
+            if (!playerId) return;
+            const heartbeat = setInterval(async () => {
+              const fs = await getFreshState();
+              if (!fs) return;
+              const now = Date.now();
+              const updatedPlayers = fs.players.map(p => p.id === playerId ? { ...p, lastSeen: now } : p);
+              // Remove players not seen in 5 minutes
+              const activePlayers = updatedPlayers.filter(p => (now - (p.lastSeen || p.joinedAt)) < 300000);
+              const removedIds = updatedPlayers.filter(p => !activePlayers.find(a => a.id === p.id)).map(p => p.id);
+              if (removedIds.length > 0 || updatedPlayers.length !== fs.players.length) {
+                const activeOrder = (fs.playerOrder || []).filter(pid => activePlayers.find(p => p.id === pid));
+                const newBets = { ...fs.bets };
+                const newCB = { ...(fs.comeBets || {}) };
+                const newDCB = { ...(fs.dontComeBets || {}) };
+                removedIds.forEach(rid => { delete newBets[rid]; delete newCB[rid]; delete newDCB[rid]; });
+                await saveToServer({ ...fs, players: activePlayers, playerOrder: activeOrder, bets: newBets, comeBets: newCB, dontComeBets: newDCB,
+                  currentShooter: fs.currentShooter >= activeOrder.length ? 0 : fs.currentShooter });
+              } else {
+                await saveToServer({ ...fs, players: updatedPlayers });
+              }
+            }, 30000);
+            return () => clearInterval(heartbeat);
+          }, [playerId]);
 
           const initializeGame = () => ({
-            players: [],
-            playerOrder: [], // Track join order for shooter rotation
-            currentShooter: 0,
-            point: null,
-            phase: 'comeout',
-            lastDice: null,
-            lastTotal: null,
-            lastDealerCall: '',
-            bets: {},
-            gameId: Date.now()
+            players: [], playerOrder: [], currentShooter: 0, point: null,
+            phase: 'comeout', lastDice: null, lastTotal: null, lastDealerCall: '',
+            bets: {}, comeBets: {}, dontComeBets: {}, gameId: Date.now(),
+            rollId: null, lastRollResult: null, lastRollMessage: '', lastRollShooter: null
           });
-
-          const saveGameState = (newState) => {
-            try {
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(newState));
-              setGameState(newState);
-            } catch (error) {
-              console.error('Error saving:', error);
-            }
-          };
 
           const getDealerCall = (total, phase, point, die1, die2) => {
             const isHard = die1 === die2;
@@ -308,779 +246,401 @@
               11: ["Yo-leven!", "Yo!", "Eleven, front line winner!"],
               12: ["Boxcars!", "Craps, twelve!", "Midnight!"]
             };
-            
-            const options = calls[total] || [`${total}!`];
+            const options = calls[total] || [total + '!'];
             return options[Math.floor(Math.random() * options.length)];
           };
 
-          const joinGame = () => {
-            if (!playerName.trim()) {
-              showMessage('Please enter a name');
-              return;
-            }
-            
-            const currentGame = gameState || initializeGame();
-            
-            if (currentGame.players.length >= MAX_PLAYERS) {
-              showMessage('Table is full (6 players max)');
-              return;
-            }
-
-            const newPlayerId = `player_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            
-            const newPlayer = {
-              id: newPlayerId,
-              name: playerName.trim(),
-              chips: STARTING_CHIPS,
-              joinedAt: Date.now()
-            };
-
+          const joinGame = async () => {
+            if (!playerName.trim()) { showMessage('Please enter a name'); return; }
+            const fs = await getFreshState();
+            if (!fs) { showMessage('Connection error, try again'); return; }
+            if (fs.players.length >= MAX_PLAYERS) { showMessage('Table is full (6 players max)'); return; }
+            const newPlayerId = 'player_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            const newPlayer = { id: newPlayerId, name: playerName.trim(), chips: STARTING_CHIPS, joinedAt: Date.now(), lastSeen: Date.now() };
             const updatedGame = {
-              ...currentGame,
-              players: [...currentGame.players, newPlayer],
-              playerOrder: [...(currentGame.playerOrder || []), newPlayerId], // Add to end
-              bets: { ...currentGame.bets, [newPlayerId]: {} }
+              ...fs, players: [...fs.players, newPlayer],
+              playerOrder: [...(fs.playerOrder || []), newPlayerId],
+              bets: { ...fs.bets, [newPlayerId]: {} },
+              comeBets: { ...(fs.comeBets || {}), [newPlayerId]: [] },
+              dontComeBets: { ...(fs.dontComeBets || {}), [newPlayerId]: [] }
             };
-
-            saveGameState(updatedGame);
-            
-            setPlayerId(newPlayerId);
-            localStorage.setItem('craps-player-id', newPlayerId);
-            setShowJoinModal(false);
-            showMessage(`Welcome to the table, ${playerName}!`);
+            const saved = await saveToServer(updatedGame);
+            if (saved) {
+              setPlayerId(newPlayerId);
+              playerIdRef.current = newPlayerId;
+              sessionStorage.setItem('craps-player-id', newPlayerId);
+              setShowJoinModal(false);
+              showMessage('Welcome to the table, ' + playerName + '!');
+            } else { showMessage('Failed to join, try again'); }
           };
 
-          const rebuy = () => {
-            const player = gameState.players.find(p => p.id === playerId);
-            if (!player) return;
-
-            const updatedPlayers = gameState.players.map(p =>
-              p.id === playerId ? { ...p, chips: p.chips + STARTING_CHIPS } : p
-            );
-
-            saveGameState({ ...gameState, players: updatedPlayers });
-            showMessage(`Added $${STARTING_CHIPS} to your stack`);
+          const rebuy = async () => {
+            const fs = await getFreshState();
+            if (!fs) return;
+            const up = fs.players.map(p => p.id === playerId ? { ...p, chips: p.chips + STARTING_CHIPS } : p);
+            await saveToServer({ ...fs, players: up });
+            showMessage('Added $' + STARTING_CHIPS + ' to your stack');
           };
 
-          const getMaxOdds = (point, passLineBet) => {
-            // 3-4-5x odds: 3x on 4&10, 4x on 5&9, 5x on 6&8
-            if (point === 4 || point === 10) return passLineBet * 3;
-            if (point === 5 || point === 9) return passLineBet * 4;
-            if (point === 6 || point === 8) return passLineBet * 5;
+          const getMaxOdds = (point, bet) => {
+            if (point === 4 || point === 10) return bet * 3;
+            if (point === 5 || point === 9) return bet * 4;
+            if (point === 6 || point === 8) return bet * 5;
             return 0;
           };
 
-          const placeBet = (betType, betLabel, amount = null) => {
-            if (!selectedDenomination && !amount) {
-              showMessage('Select a chip denomination first');
-              return;
-            }
-
+          const placeBet = async (betType, betLabel, amount) => {
+            if (!selectedDenomination && !amount) { showMessage('Select a chip denomination first'); return; }
             const betAmount = amount || selectedDenomination;
-            const player = gameState.players.find(p => p.id === playerId);
+            const fs = await getFreshState();
+            if (!fs) { showMessage('Connection error'); return; }
+            const player = fs.players.find(p => p.id === playerId);
             if (!player) return;
-
-            if (player.chips < betAmount) {
-              showMessage('Not enough chips');
-              return;
+            if (player.chips < betAmount) { showMessage('Not enough chips'); return; }
+            if (betType === 'passodds' && fs.point) {
+              const plb = (fs.bets[playerId]?.pass || 0);
+              if (plb === 0) { showMessage('Need a Pass Line bet first'); return; }
+              const co = (fs.bets[playerId]?.passodds || 0), mo = getMaxOdds(fs.point, plb);
+              if (co + betAmount > mo) { showMessage('Max odds: ' + (mo/plb) + 'x ($' + mo + ')'); return; }
             }
-
-            // Check odds bet limits
-            if (betType === 'passodds' && gameState.point) {
-              const passLineBet = (gameState.bets[playerId]?.pass || 0);
-              const currentOdds = (gameState.bets[playerId]?.passodds || 0);
-              const maxOdds = getMaxOdds(gameState.point, passLineBet);
-              
-              if (currentOdds + betAmount > maxOdds) {
-                showMessage(`Max odds: ${maxOdds / passLineBet}x your pass line bet ($${maxOdds})`);
-                return;
-              }
+            if (betType === 'dontpassodds' && fs.point) {
+              const dpb = (fs.bets[playerId]?.dontpass || 0);
+              if (dpb === 0) { showMessage("Need a Don't Pass bet first"); return; }
+              const co = (fs.bets[playerId]?.dontpassodds || 0), mo = getMaxOdds(fs.point, dpb);
+              if (co + betAmount > mo) { showMessage('Max odds exceeded'); return; }
             }
-
-            if (betType === 'dontpassodds' && gameState.point) {
-              const dontPassBet = (gameState.bets[playerId]?.dontpass || 0);
-              const currentOdds = (gameState.bets[playerId]?.dontpassodds || 0);
-              const maxOdds = getMaxOdds(gameState.point, dontPassBet);
-              
-              if (currentOdds + betAmount > maxOdds) {
-                showMessage(`Max odds: ${maxOdds / dontPassBet}x your don't pass bet ($${maxOdds})`);
-                return;
-              }
+            if (['pass','dontpass'].includes(betType) && betAmount < TABLE_MIN) { showMessage('Minimum $' + TABLE_MIN); return; }
+            if (['come','dontcome'].includes(betType) && betAmount < TABLE_MIN) { showMessage('Minimum $' + TABLE_MIN); return; }
+            if (betAmount < PROP_MIN) { showMessage('Minimum $' + PROP_MIN); return; }
+            if (fs.phase === 'point' && ['pass','dontpass'].includes(betType)) {
+              const cb = fs.bets[playerId] || {};
+              if (!cb[betType]) { showMessage("Can only bet Pass/Don't Pass on come out roll"); return; }
             }
-
-            if (['pass', 'dontpass'].includes(betType) && betAmount < TABLE_MIN) {
-              showMessage(`Minimum $${TABLE_MIN} for Pass/Don't Pass`);
-              return;
-            }
-
-            if (betAmount < PROP_MIN) {
-              showMessage(`Minimum $${PROP_MIN}`);
-              return;
-            }
-
-            if (gameState.phase === 'point' && ['pass', 'dontpass'].includes(betType)) {
-              const currentBets = gameState.bets[playerId] || {};
-              if (!currentBets[betType]) {
-                showMessage('Can only bet Pass/Don\'t Pass on come out roll');
-                return;
-              }
-            }
-
-            const updatedPlayers = gameState.players.map(p =>
-              p.id === playerId ? { ...p, chips: p.chips - betAmount } : p
-            );
-
-            const currentBets = gameState.bets[playerId] || {};
-            const updatedBets = {
-              ...gameState.bets,
-              [playerId]: {
-                ...currentBets,
-                [betType]: (currentBets[betType] || 0) + betAmount
-              }
-            };
-
-            saveGameState({
-              ...gameState,
-              players: updatedPlayers,
-              bets: updatedBets
-            });
-
-            showMessage(`Placed $${betAmount} on ${betLabel}`);
+            if (['come','dontcome'].includes(betType) && fs.phase !== 'point') { showMessage("Come/Don't Come only during point phase"); return; }
+            const up = fs.players.map(p => p.id === playerId ? { ...p, chips: p.chips - betAmount } : p);
+            const cb = fs.bets[playerId] || {};
+            const ub = { ...fs.bets, [playerId]: { ...cb, [betType]: (cb[betType] || 0) + betAmount } };
+            await saveToServer({ ...fs, players: up, bets: ub });
+            showMessage('Placed $' + betAmount + ' on ' + betLabel);
           };
 
-          const removeBet = (betType) => {
-            const player = gameState.players.find(p => p.id === playerId);
-            if (!player) return;
-
-            const currentBets = gameState.bets[playerId] || {};
-            const betAmount = currentBets[betType];
-            
-            if (!betAmount) return;
-
-            const updatedPlayers = gameState.players.map(p =>
-              p.id === playerId ? { ...p, chips: p.chips + betAmount } : p
-            );
-
-            const { [betType]: removed, ...remainingBets } = currentBets;
-            const updatedBets = {
-              ...gameState.bets,
-              [playerId]: remainingBets
-            };
-
-            saveGameState({
-              ...gameState,
-              players: updatedPlayers,
-              bets: updatedBets
-            });
-
-            showMessage(`Removed $${betAmount} bet`);
+          const removeBet = async (betType) => {
+            const fs = await getFreshState();
+            if (!fs) return;
+            if (['pass','dontpass'].includes(betType) && fs.phase === 'point') { showMessage("Can't remove contract bets"); return; }
+            const cb = fs.bets[playerId] || {};
+            const ba = cb[betType];
+            if (!ba) return;
+            const up = fs.players.map(p => p.id === playerId ? { ...p, chips: p.chips + ba } : p);
+            const { [betType]: removed, ...rest } = cb;
+            await saveToServer({ ...fs, players: up, bets: { ...fs.bets, [playerId]: rest } });
+            showMessage('Removed $' + ba + ' bet');
           };
 
-          const pullAllBets = () => {
-            const player = gameState.players.find(p => p.id === playerId);
-            if (!player) return;
-
-            const currentBets = gameState.bets[playerId] || {};
-            const totalBets = Object.values(currentBets).reduce((sum, bet) => sum + bet, 0);
-
-            if (totalBets === 0) {
-              showMessage('No bets to pull');
-              return;
+          const pullAllBets = async () => {
+            const fs = await getFreshState();
+            if (!fs) return;
+            const cb = fs.bets[playerId] || {};
+            let pullable = { ...cb }, kept = {};
+            if (fs.phase === 'point') {
+              if (cb.pass) { kept.pass = cb.pass; delete pullable.pass; }
+              if (cb.dontpass) { kept.dontpass = cb.dontpass; delete pullable.dontpass; }
             }
-
-            const updatedPlayers = gameState.players.map(p =>
-              p.id === playerId ? { ...p, chips: p.chips + totalBets } : p
-            );
-
-            const updatedBets = {
-              ...gameState.bets,
-              [playerId]: {}
-            };
-
-            saveGameState({
-              ...gameState,
-              players: updatedPlayers,
-              bets: updatedBets
-            });
-
-            showMessage(`Pulled all bets: $${totalBets}`);
+            const total = Object.values(pullable).reduce((s, b) => s + b, 0);
+            if (total === 0) { showMessage('No removable bets'); return; }
+            const up = fs.players.map(p => p.id === playerId ? { ...p, chips: p.chips + total } : p);
+            await saveToServer({ ...fs, players: up, bets: { ...fs.bets, [playerId]: kept } });
+            showMessage('Pulled bets: $' + total);
           };
 
-          const placePresetBet = (preset) => {
-            const player = gameState.players.find(p => p.id === playerId);
-            if (!player || !selectedDenomination) {
-              showMessage('Select a chip denomination first');
-              return;
-            }
-
-            const currentShooterId = gameState.playerOrder[gameState.currentShooter];
-            const isCurrentShooter = playerId === currentShooterId;
-            const point = gameState.point;
-
-            let bets = [];
-            if (preset === 'inside') {
-              // Inside: 5, 6, 8, 9 (skip if shooter and it's the point)
-              [5, 6, 8, 9].forEach(num => {
-                if (isCurrentShooter && num === point) return; // Skip shooter's point
-                bets.push({ type: `place${num}`, label: `${num} Place` });
-              });
-            } else if (preset === 'outside') {
-              // Outside: Buy 4 and 10 (skip if shooter and it's the point)
-              [4, 10].forEach(num => {
-                if (isCurrentShooter && num === point) return; // Skip shooter's point
-                bets.push({ type: `buy${num}`, label: `${num} Buy` });
-              });
-            } else if (preset === 'across') {
-              // Across: All numbers (4&10 buy, rest place) - skip shooter's point
-              [4, 5, 6, 8, 9, 10].forEach(num => {
-                if (isCurrentShooter && num === point) return; // Skip shooter's point
-                if (num === 4 || num === 10) {
-                  bets.push({ type: `buy${num}`, label: `${num} Buy` });
-                } else {
-                  bets.push({ type: `place${num}`, label: `${num} Place` });
-                }
-              });
-            }
-
-            if (bets.length === 0) {
-              showMessage('No bets to place (all numbers covered)');
-              return;
-            }
-
-            const totalCost = selectedDenomination * bets.length;
-            if (player.chips < totalCost) {
-              showMessage(`Need $${totalCost} for ${preset.toUpperCase()}`);
-              return;
-            }
-
-            bets.forEach(bet => {
-              placeBet(bet.type, bet.label, selectedDenomination);
-            });
+          const placePresetBet = async (preset) => {
+            const fs = await getFreshState();
+            if (!fs) return;
+            const player = fs.players.find(p => p.id === playerId);
+            if (!player || !selectedDenomination) { showMessage('Select a chip denomination first'); return; }
+            const csid = fs.playerOrder[fs.currentShooter];
+            const isCS = playerId === csid, point = fs.point;
+            const myBets = fs.bets[playerId] || {};
+            const hasPL = myBets.pass > 0;
+            let btp = [];
+            const skip = (n) => (isCS || hasPL) && n === point;
+            if (preset === 'inside') { [5,6,8,9].forEach(n => { if (!skip(n)) btp.push({ type: 'place'+n }); }); }
+            else if (preset === 'outside') { [4,10].forEach(n => { if (!skip(n)) btp.push({ type: 'buy'+n }); }); }
+            else if (preset === 'across') { [4,5,6,8,9,10].forEach(n => { if (!skip(n)) btp.push({ type: (n===4||n===10?'buy':'place')+n }); }); }
+            if (btp.length === 0) { showMessage('No bets to place'); return; }
+            const tc = selectedDenomination * btp.length;
+            if (player.chips < tc) { showMessage('Need $' + tc); return; }
+            const up = fs.players.map(p => p.id === playerId ? { ...p, chips: p.chips - tc } : p);
+            const nb = { ...myBets };
+            btp.forEach(b => { nb[b.type] = (nb[b.type] || 0) + selectedDenomination; });
+            await saveToServer({ ...fs, players: up, bets: { ...fs.bets, [playerId]: nb } });
+            showMessage('Placed ' + btp.length + ' ' + preset.toUpperCase() + ' bets ($' + tc + ')');
           };
 
           const getTotalBetsOnTable = () => {
             if (!playerId || !gameState) return 0;
-            const myBets = gameState.bets[playerId] || {};
-            return Object.values(myBets).reduce((sum, bet) => sum + bet, 0);
+            const mb = gameState.bets[playerId] || {};
+            let t = Object.values(mb).reduce((s, b) => s + b, 0);
+            ((gameState.comeBets || {})[playerId] || []).forEach(cb => { t += cb.amount; });
+            ((gameState.dontComeBets || {})[playerId] || []).forEach(cb => { t += cb.amount; });
+            return t;
           };
 
           const rollDice = async () => {
-            if (isRolling) return;
-            
-            const shooterId = gameState.playerOrder[gameState.currentShooter];
-            const shooter = gameState.players.find(p => p.id === shooterId);
-            
-            if (!shooter || shooter.id !== playerId) {
-              showMessage('Not your turn to shoot');
-              return;
-            }
-
-            setIsRolling(true);
-            setMessage('');
-            setDealerCall('');
-
+            if (isRolling || rollLockRef.current) return;
+            const fs = await getFreshState();
+            if (!fs) return;
+            const sid = fs.playerOrder[fs.currentShooter];
+            if (sid !== playerId) { showMessage('Not your turn to shoot'); return; }
+            rollLockRef.current = true;
+            setIsRolling(true); setMessage(''); setDealerCall('');
             for (let i = 0; i < 10; i++) {
-              setDiceValues({
-                die1: Math.floor(Math.random() * 6) + 1,
-                die2: Math.floor(Math.random() * 6) + 1
-              });
-              await new Promise(resolve => setTimeout(resolve, 80));
+              setDiceValues({ die1: Math.floor(Math.random()*6)+1, die2: Math.floor(Math.random()*6)+1 });
+              await new Promise(r => setTimeout(r, 80));
             }
-
-            const die1 = Math.floor(Math.random() * 6) + 1;
-            const die2 = Math.floor(Math.random() * 6) + 1;
-            const total = die1 + die2;
-            
+            const die1 = Math.floor(Math.random()*6)+1, die2 = Math.floor(Math.random()*6)+1, total = die1+die2;
             setDiceValues({ die1, die2 });
-            
-            const call = getDealerCall(total, gameState.phase, gameState.point, die1, die2);
+            const call = getDealerCall(total, fs.phase, fs.point, die1, die2);
             setDealerCall(call);
-            
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            processRoll(die1, die2, total, call);
-            
+            await new Promise(r => setTimeout(r, 500));
+            await processRoll(fs, die1, die2, total, call);
             setIsRolling(false);
+            rollLockRef.current = false;
           };
 
-          const processRoll = (die1, die2, total, call) => {
-            let updatedGame = {
-              ...gameState,
-              lastDice: { die1, die2 },
-              lastTotal: total,
-              lastDealerCall: call
+          const processRoll = async (gs, die1, die2, total, call) => {
+            const rollId = Date.now() + '_' + Math.random().toString(36).substr(2,6);
+            let ug = { ...gs, lastDice: { die1, die2 }, lastTotal: total, lastDealerCall: call,
+              comeBets: JSON.parse(JSON.stringify(gs.comeBets || {})),
+              dontComeBets: JSON.parse(JSON.stringify(gs.dontComeBets || {})),
+              rollId: rollId, lastRollShooter: playerId
             };
+            const pay = {}, loss = {};
+            let msgs = [], sevenOut = false;
+            gs.players.forEach(p => { pay[p.id] = 0; loss[p.id] = 0; });
 
-            const payouts = {};
-            const losses = {};
-            let messages = [];
-
-            gameState.players.forEach(p => {
-              payouts[p.id] = 0;
-              losses[p.id] = 0;
-            });
-
-            if (gameState.phase === 'comeout') {
-              if (total === 7 || total === 11) {
-                messages.push('Natural! Pass wins');
-                gameState.players.forEach(p => {
-                  const bets = gameState.bets[p.id] || {};
-                  if (bets.pass) payouts[p.id] += bets.pass;
-                  if (bets.dontpass) losses[p.id] += bets.dontpass;
-                });
-                updatedGame.bets = clearBetsForAllPlayers(gameState.bets, ['pass', 'dontpass']);
-              } else if (total === 2 || total === 3 || total === 12) {
-                messages.push('Craps!');
-                gameState.players.forEach(p => {
-                  const bets = gameState.bets[p.id] || {};
-                  if (bets.pass) losses[p.id] += bets.pass;
-                  if (bets.dontpass) {
-                    if (total === 12) {
-                      // Push
-                    } else {
-                      payouts[p.id] += bets.dontpass;
-                    }
-                  }
-                });
-                updatedGame.bets = clearBetsForAllPlayers(gameState.bets, ['pass', 'dontpass']);
-              } else {
-                messages.push(`Point is ${total}`);
-                updatedGame.point = total;
-                updatedGame.phase = 'point';
+            // ONE-ROLL BETS
+            gs.players.forEach(p => {
+              const b = gs.bets[p.id] || {};
+              if (b.field) {
+                if ([2,3,4,9,10,11,12].includes(total)) { pay[p.id] += (total===2||total===12) ? b.field*2 : b.field; }
+                else { loss[p.id] += b.field; }
               }
+              if (b.horn) {
+                if ([2,3,11,12].includes(total)) { const hb=b.horn/4; pay[p.id]+=(total===2||total===12)?hb*30:hb*15; loss[p.id]+=hb*3; }
+                else { loss[p.id] += b.horn; }
+              }
+              if (b.ce) {
+                if ([2,3,12].includes(total)) { const h=b.ce/2; pay[p.id]+=h*7; loss[p.id]+=h; }
+                else if (total===11) { const h=b.ce/2; pay[p.id]+=h*15; loss[p.id]+=h; }
+                else { loss[p.id]+=b.ce; }
+              }
+            });
+            ug.bets = clearBets(gs.bets, ['field','horn','ce']);
+
+            // PASS/DON'T PASS
+            if (gs.phase === 'comeout') {
+              if (total===7||total===11) {
+                msgs.push('Natural! Pass wins');
+                gs.players.forEach(p => { const b=gs.bets[p.id]||{}; if(b.pass) pay[p.id]+=b.pass; if(b.dontpass) loss[p.id]+=b.dontpass; });
+                ug.bets = clearBets(ug.bets, ['pass','dontpass']);
+              } else if ([2,3,12].includes(total)) {
+                msgs.push('Craps!');
+                gs.players.forEach(p => { const b=gs.bets[p.id]||{}; if(b.pass) loss[p.id]+=b.pass; if(b.dontpass&&total!==12) pay[p.id]+=b.dontpass; });
+                ug.bets = clearBets(ug.bets, total===12?['pass']:['pass','dontpass']);
+              } else { msgs.push('Point is '+total); ug.point=total; ug.phase='point'; }
             } else {
-              if (total === 7) {
-                messages.push('Seven out!');
-                gameState.players.forEach(p => {
-                  const bets = gameState.bets[p.id] || {};
-                  if (bets.pass) losses[p.id] += bets.pass;
-                  if (bets.passodds) losses[p.id] += bets.passodds;
-                  if (bets.dontpass) payouts[p.id] += bets.dontpass;
-                  if (bets.dontpassodds) {
-                    const oddsWin = getOddsWin(gameState.point, bets.dontpassodds);
-                    payouts[p.id] += oddsWin;
-                  }
-                  
-                  [4,5,6,8,9,10].forEach(num => {
-                    if (bets[`place${num}`]) losses[p.id] += bets[`place${num}`];
-                  });
-                  
-                  [4,6,8,10].forEach(num => {
-                    if (bets[`hard${num}`]) losses[p.id] += bets[`hard${num}`];
-                  });
-                  
-                  [4,5,6,8,9,10].forEach(num => {
-                    if (bets[`buy${num}`]) losses[p.id] += bets[`buy${num}`];
-                  });
+              if (total===7) {
+                sevenOut=true; msgs.push('Seven out!');
+                gs.players.forEach(p => {
+                  const b=gs.bets[p.id]||{};
+                  if(b.pass) loss[p.id]+=b.pass; if(b.passodds) loss[p.id]+=b.passodds;
+                  if(b.dontpass) pay[p.id]+=b.dontpass; if(b.dontpassodds) pay[p.id]+=getDPOddsWin(gs.point,b.dontpassodds);
+                  [4,5,6,8,9,10].forEach(n=>{if(b['place'+n])loss[p.id]+=b['place'+n];if(b['buy'+n])loss[p.id]+=b['buy'+n];});
+                  [4,6,8,10].forEach(n=>{if(b['hard'+n])loss[p.id]+=b['hard'+n];});
+                  if(b.come) pay[p.id]+=b.come; if(b.dontcome) loss[p.id]+=b.dontcome;
+                  (ug.comeBets[p.id]||[]).forEach(cb=>{loss[p.id]+=cb.amount;}); ug.comeBets[p.id]=[];
+                  (ug.dontComeBets[p.id]||[]).forEach(cb=>{pay[p.id]+=cb.amount;}); ug.dontComeBets[p.id]=[];
                 });
-                
-                updatedGame.point = null;
-                updatedGame.phase = 'comeout';
-                // CLOCKWISE: Move to next player in playerOrder
-                updatedGame.currentShooter = (gameState.currentShooter + 1) % gameState.playerOrder.length;
-                updatedGame.bets = {};
-              } else if (total === gameState.point) {
-                messages.push('Point made! Pass wins');
-                gameState.players.forEach(p => {
-                  const bets = gameState.bets[p.id] || {};
-                  if (bets.pass) payouts[p.id] += bets.pass;
-                  if (bets.passodds) {
-                    const oddsWin = getOddsWin(gameState.point, bets.passodds);
-                    payouts[p.id] += oddsWin;
-                  }
-                  if (bets.dontpass) losses[p.id] += bets.dontpass;
-                  if (bets.dontpassodds) losses[p.id] += bets.dontpassodds;
+                ug.point=null; ug.phase='comeout';
+                ug.currentShooter=(gs.currentShooter+1)%gs.playerOrder.length;
+                ug.bets={};
+              } else if (total===gs.point) {
+                msgs.push('Point made! Pass wins');
+                gs.players.forEach(p => {
+                  const b=gs.bets[p.id]||{};
+                  if(b.pass)pay[p.id]+=b.pass; if(b.passodds)pay[p.id]+=getOddsWin(gs.point,b.passodds);
+                  if(b.dontpass)loss[p.id]+=b.dontpass; if(b.dontpassodds)loss[p.id]+=b.dontpassodds;
                 });
-                
-                const betsToKeep = {};
-                gameState.players.forEach(p => {
-                  const bets = gameState.bets[p.id] || {};
-                  betsToKeep[p.id] = {};
-                  
-                  [4,5,6,8,9,10].forEach(num => {
-                    if (bets[`place${num}`]) betsToKeep[p.id][`place${num}`] = bets[`place${num}`];
-                    if (bets[`buy${num}`]) betsToKeep[p.id][`buy${num}`] = bets[`buy${num}`];
-                  });
-                  [4,6,8,10].forEach(num => {
-                    if (bets[`hard${num}`]) betsToKeep[p.id][`hard${num}`] = bets[`hard${num}`];
-                  });
+                const keep={};
+                gs.players.forEach(p=>{const b=gs.bets[p.id]||{};keep[p.id]={};
+                  [4,5,6,8,9,10].forEach(n=>{if(b['place'+n])keep[p.id]['place'+n]=b['place'+n];if(b['buy'+n])keep[p.id]['buy'+n]=b['buy'+n];});
+                  [4,6,8,10].forEach(n=>{if(b['hard'+n])keep[p.id]['hard'+n]=b['hard'+n];});
+                  if(b.come)keep[p.id].come=b.come;if(b.dontcome)keep[p.id].dontcome=b.dontcome;
                 });
-                
-                updatedGame.point = null;
-                updatedGame.phase = 'comeout';
-                updatedGame.bets = betsToKeep;
+                ug.point=null; ug.phase='comeout'; ug.bets=keep;
               }
             }
 
-            // Field, place, buy, hardways, props - same as before
-            if ([2, 3, 4, 9, 10, 11, 12].includes(total)) {
-              gameState.players.forEach(p => {
-                const bets = gameState.bets[p.id] || {};
-                if (bets.field) {
-                  if (total === 2 || total === 12) {
-                    payouts[p.id] += bets.field * 2;
-                  } else {
-                    payouts[p.id] += bets.field;
-                  }
+            // COME/DON'T COME
+            if (gs.phase==='point'&&!sevenOut) {
+              gs.players.forEach(p=>{
+                const b=gs.bets[p.id]||{};
+                if(b.come){
+                  if(total===7||total===11){pay[p.id]+=b.come;if(ug.bets[p.id])delete ug.bets[p.id].come;}
+                  else if([2,3,12].includes(total)){loss[p.id]+=b.come;if(ug.bets[p.id])delete ug.bets[p.id].come;}
+                  else{if(!ug.comeBets[p.id])ug.comeBets[p.id]=[];const ex=ug.comeBets[p.id].find(x=>x.number===total);
+                    if(ex)ex.amount+=b.come;else ug.comeBets[p.id].push({number:total,amount:b.come});
+                    if(ug.bets[p.id])delete ug.bets[p.id].come;msgs.push('Come bet to '+total);}
                 }
-              });
-              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['field']);
-            } else {
-              gameState.players.forEach(p => {
-                const bets = gameState.bets[p.id] || {};
-                if (bets.field) losses[p.id] += bets.field;
-              });
-              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['field']);
-            }
-
-            if (gameState.phase === 'point' && [4, 5, 6, 8, 9, 10].includes(total) && total !== 7) {
-              gameState.players.forEach(p => {
-                const bets = gameState.bets[p.id] || {};
-                const placeKey = `place${total}`;
-                if (bets[placeKey]) {
-                  const win = getPlaceWin(total, bets[placeKey]);
-                  payouts[p.id] += win;
+                if(b.dontcome){
+                  if(total===7||total===11){loss[p.id]+=b.dontcome;if(ug.bets[p.id])delete ug.bets[p.id].dontcome;}
+                  else if(total===2||total===3){pay[p.id]+=b.dontcome;if(ug.bets[p.id])delete ug.bets[p.id].dontcome;}
+                  else if(total===12){/* push */}
+                  else{if(!ug.dontComeBets[p.id])ug.dontComeBets[p.id]=[];const ex=ug.dontComeBets[p.id].find(x=>x.number===total);
+                    if(ex)ex.amount+=b.dontcome;else ug.dontComeBets[p.id].push({number:total,amount:b.dontcome});
+                    if(ug.bets[p.id])delete ug.bets[p.id].dontcome;}
                 }
+                (ug.comeBets[p.id]||[]).slice().forEach(cb=>{if(total===cb.number){pay[p.id]+=cb.amount;ug.comeBets[p.id]=ug.comeBets[p.id].filter(x=>x!==cb);}});
+                (ug.dontComeBets[p.id]||[]).slice().forEach(cb=>{if(total===cb.number){loss[p.id]+=cb.amount;ug.dontComeBets[p.id]=ug.dontComeBets[p.id].filter(x=>x!==cb);}});
               });
             }
 
-            if (gameState.phase === 'point' && [4, 5, 6, 8, 9, 10].includes(total) && total !== 7) {
-              gameState.players.forEach(p => {
-                const bets = gameState.bets[p.id] || {};
-                const buyKey = `buy${total}`;
-                if (bets[buyKey]) {
-                  const trueOdds = getBuyWin(total, bets[buyKey]);
-                  payouts[p.id] += trueOdds;
-                }
+            // PLACE BETS
+            if(gs.phase==='point'&&!sevenOut&&[4,5,6,8,9,10].includes(total)){
+              gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b['place'+total])pay[p.id]+=getPlaceWin(total,b['place'+total]);});
+            }
+            // BUY BETS with 5% vig
+            if(gs.phase==='point'&&!sevenOut&&[4,5,6,8,9,10].includes(total)){
+              gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b['buy'+total]){const tw=getBuyWin(total,b['buy'+total]);pay[p.id]+=(tw-Math.ceil(tw*0.05));}});
+            }
+            // HARDWAYS
+            if(gs.phase==='point'&&!sevenOut){
+              [4,6,8,10].forEach(hn=>{
+                if(total===hn&&die1===die2){gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b['hard'+hn])pay[p.id]+=getHardwayWin(hn,b['hard'+hn]);});}
+                else if(total===hn&&die1!==die2){gs.players.forEach(p=>{const b=gs.bets[p.id]||{};if(b['hard'+hn])loss[p.id]+=b['hard'+hn];});ug.bets=clearBets(ug.bets,['hard'+hn]);}
               });
             }
 
-            if (gameState.phase === 'point' && die1 === die2 && [4, 6, 8, 10].includes(total)) {
-              gameState.players.forEach(p => {
-                const bets = gameState.bets[p.id] || {};
-                const hardKey = `hard${total}`;
-                if (bets[hardKey]) {
-                  const win = getHardwayWin(total, bets[hardKey]);
-                  payouts[p.id] += win;
-                }
-              });
-            } else if (gameState.phase === 'point' && [4, 6, 8, 10].includes(total) && total !== 7) {
-              gameState.players.forEach(p => {
-                const bets = gameState.bets[p.id] || {};
-                const hardKey = `hard${total}`;
-                if (bets[hardKey]) {
-                  losses[p.id] += bets[hardKey];
-                }
-              });
-              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, [`hard${total}`]);
-            }
+            ug.players = gs.players.map(p=>({...p,chips:p.chips+(pay[p.id]||0)}));
+            ug.lastRollResult = { payouts: pay, losses: loss };
+            ug.lastRollMessage = msgs.join(' \u2022 ');
+            await saveToServer(ug);
+            setLastRollId(rollId);
 
-            if ([2, 3, 11, 12].includes(total)) {
-              gameState.players.forEach(p => {
-                const bets = gameState.bets[p.id] || {};
-                if (bets.horn) {
-                  const hornBet = bets.horn / 4;
-                  if (total === 2 || total === 12) {
-                    payouts[p.id] += hornBet * 30;
-                    losses[p.id] += hornBet * 3;
-                  } else {
-                    payouts[p.id] += hornBet * 15;
-                    losses[p.id] += hornBet * 3;
-                  }
-                }
-              });
-              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['horn']);
-            } else {
-              gameState.players.forEach(p => {
-                const bets = gameState.bets[p.id] || {};
-                if (bets.horn) losses[p.id] += bets.horn;
-              });
-              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['horn']);
-            }
+            const myNet = (pay[playerId]||0) - (loss[playerId]||0);
+            if(myNet>0){setWinLossDisplay({playerId,amount:myNet,type:'win'});setTimeout(()=>setWinLossDisplay(null),3000);}
+            else if(myNet<0){setWinLossDisplay({playerId,amount:Math.abs(myNet),type:'loss'});setTimeout(()=>setWinLossDisplay(null),3000);}
+            if(msgs.length>0) showMessage(msgs.join(' \u2022 '));
+          };
 
-            if ([2, 3, 12].includes(total)) {
-              gameState.players.forEach(p => {
-                const bets = gameState.bets[p.id] || {};
-                if (bets.ce) {
-                  const half = bets.ce / 2;
-                  payouts[p.id] += half * 7;
-                  losses[p.id] += half;
-                }
-              });
-              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['ce']);
-            } else if (total === 11) {
-              gameState.players.forEach(p => {
-                const bets = gameState.bets[p.id] || {};
-                if (bets.ce) {
-                  const half = bets.ce / 2;
-                  payouts[p.id] += half * 15;
-                  losses[p.id] += half;
-                }
-              });
-              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['ce']);
-            } else {
-              gameState.players.forEach(p => {
-                const bets = gameState.bets[p.id] || {};
-                if (bets.ce) losses[p.id] += bets.ce;
-              });
-              updatedGame.bets = clearBetsForAllPlayers(updatedGame.bets, ['ce']);
-            }
+          const clearBets = (bets, types) => {
+            const nb={};Object.keys(bets).forEach(pid=>{nb[pid]={};Object.keys(bets[pid]||{}).forEach(bt=>{if(!types.includes(bt))nb[pid][bt]=bets[pid][bt];});});return nb;
+          };
+          const getOddsWin=(pt,bet)=>{if(pt===4||pt===10)return bet*2;if(pt===5||pt===9)return bet*1.5;if(pt===6||pt===8)return bet*1.2;return 0;};
+          const getDPOddsWin=(pt,bet)=>{if(pt===4||pt===10)return bet*0.5;if(pt===5||pt===9)return bet*(2/3);if(pt===6||pt===8)return bet*(5/6);return 0;};
+          const getPlaceWin=(n,bet)=>{if(n===4||n===10)return Math.floor(bet*(9/5));if(n===5||n===9)return Math.floor(bet*(7/5));if(n===6||n===8)return Math.floor(bet*(7/6));return 0;};
+          const getBuyWin=(n,bet)=>{if(n===4||n===10)return bet*2;if(n===5||n===9)return bet*1.5;if(n===6||n===8)return bet*1.2;return 0;};
+          const getHardwayWin=(n,bet)=>{if(n===4||n===10)return bet*7;if(n===6||n===8)return bet*9;return 0;};
+          const showMessage=(msg)=>{setMessage(msg);setTimeout(()=>setMessage(''),4000);};
+          const getChipForAmount=(amount)=>{for(let i=CHIP_VALUES.length-1;i>=0;i--){if(amount>=CHIP_VALUES[i].value)return CHIP_VALUES[i];}return CHIP_VALUES[0];};
 
-            const updatedPlayers = gameState.players.map(player => {
-              return {
-                ...player,
-                chips: player.chips + payouts[player.id]
-              };
+          const CasinoChip=({chipInfo,onClick,disabled,selected,small=false,draggable:isDraggable=false,onDragStart:onDS,onDragEnd:onDE})=>{
+            const[isDragging,setIsDragging]=useState(false);
+            return(<div className={'casino-chip '+(small?'small ':'')+( selected?'chip-selected ':'')+(isDragging?'dragging':'')}
+              style={{'--chip-color':chipInfo.color,opacity:disabled?0.5:1,cursor:disabled?'not-allowed':(isDraggable?'grab':'pointer')}}
+              onClick={()=>!disabled&&onClick&&onClick(chipInfo)} draggable={isDraggable&&!disabled}
+              onDragStart={(e)=>{if(isDraggable&&!disabled&&onDS){setIsDragging(true);onDS(e);}}}
+              onDragEnd={(e)=>{setIsDragging(false);if(onDE)onDE(e);}}
+            ><span className="chip-value">${chipInfo.value}</span></div>);
+          };
+
+          const Dice=({value})=>{
+            const dp={1:[[50,50]],2:[[25,25],[75,75]],3:[[25,25],[50,50],[75,75]],4:[[25,25],[25,75],[75,25],[75,75]],5:[[25,25],[25,75],[50,50],[75,25],[75,75]],6:[[25,25],[25,50],[25,75],[75,25],[75,50],[75,75]]};
+            return(<div className="die" style={{width:80,height:80,position:'relative'}}>{dp[value].map((pos,i)=>(<div key={i} className="die-dot" style={{position:'absolute',left:pos[0]+'%',top:pos[1]+'%',transform:'translate(-50%,-50%)'}}/>))}</div>);
+          };
+
+          const BetBox=({betType,label,className='',style={},isOff=false})=>{
+            const allBets=gameState?.bets||{};
+            return(<div onClick={()=>selectedDenomination&&placeBet(betType,label)} className={'bet-box '+className+(isOff?' off':'')}
+              style={{...style,minHeight:'50px',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <div style={{textAlign:'center',color:'#ffd700',fontWeight:'bold',fontSize:'14px',textShadow:'1px 1px 2px #000',position:'relative',zIndex:1}}>
+                {label}{isOff&&<div style={{fontSize:'10px',color:'#999'}}>OFF</div>}
+              </div>
+              <div style={{position:'absolute',top:'50%',left:'50%',transform:'translate(-50%,-50%)',display:'flex',flexWrap:'wrap',gap:'6px',zIndex:2,alignItems:'center',justifyContent:'center'}}>
+                {gameState?.players.map(player=>{
+                  const pb=allBets[player.id]?.[betType]; if(!pb)return null;
+                  const isMe=player.id===playerId, ci=getChipForAmount(pb);
+                  return(<div key={player.id} style={{textAlign:'center',display:'flex',alignItems:'center',gap:'4px',background:isMe?'rgba(255,215,0,0.4)':'rgba(0,0,0,0.3)',padding:'4px 6px',borderRadius:'6px',border:isMe?'2px solid #ffd700':'1px solid rgba(255,255,255,0.2)'}}>
+                    <CasinoChip chipInfo={ci} onClick={()=>{}} disabled={false} small={true} draggable={isMe}
+                      onDragStart={(e)=>{setIsDraggingChip(true);setDraggedBetType(betType);e.dataTransfer.effectAllowed='move';}}
+                      onDragEnd={()=>{setIsDraggingChip(false);setDraggedBetType(null);}}/>
+                    <div style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}>
+                      <div style={{fontSize:'10px',color:'#fff',fontWeight:'bold',textShadow:'1px 1px 2px #000',lineHeight:'1.2'}}>{player.name.substring(0,6)}</div>
+                      <div style={{fontSize:'12px',color:'#ffd700',fontWeight:'bold',textShadow:'1px 1px 2px #000',lineHeight:'1.2'}}>${pb}</div>
+                    </div>
+                  </div>);
+                })}
+              </div>
+            </div>);
+          };
+
+          const ComeBetDisplay=({number})=>{
+            const cb=(gameState?.comeBets||{}),dcb=(gameState?.dontComeBets||{});
+            const bets=[];
+            gameState?.players.forEach(p=>{
+              (cb[p.id]||[]).filter(x=>x.number===number).forEach(x=>bets.push({player:p,amount:x.amount,type:'come'}));
+              (dcb[p.id]||[]).filter(x=>x.number===number).forEach(x=>bets.push({player:p,amount:x.amount,type:'dontcome'}));
             });
-
-            updatedGame.players = updatedPlayers;
-            saveGameState(updatedGame);
-            
-            const myPayout = payouts[playerId] || 0;
-            const myLoss = losses[playerId] || 0;
-            const netAmount = myPayout - myLoss;
-            
-            if (netAmount > 0) {
-              setWinLossDisplay({ playerId, amount: netAmount, type: 'win' });
-              setTimeout(() => setWinLossDisplay(null), 3000);
-            } else if (netAmount < 0) {
-              setWinLossDisplay({ playerId, amount: Math.abs(netAmount), type: 'loss' });
-              setTimeout(() => setWinLossDisplay(null), 3000);
-            }
-            
-            if (messages.length > 0) {
-              showMessage(messages.join(' • '));
-            }
+            if(bets.length===0)return null;
+            return(<div style={{display:'flex',flexWrap:'wrap',gap:'3px',justifyContent:'center',marginTop:'2px'}}>
+              {bets.map((b,i)=>(<div key={i} style={{fontSize:'9px',padding:'2px 4px',borderRadius:'4px',
+                background:b.type==='come'?'rgba(0,255,0,0.3)':'rgba(255,0,0,0.3)',
+                border:b.player.id===playerId?'1px solid #ffd700':'1px solid rgba(255,255,255,0.2)',
+                color:'#fff',fontWeight:'bold'}}>{b.type==='come'?'C':'DC'} ${b.amount} {b.player.name.substring(0,4)}</div>))}
+            </div>);
           };
 
-          const clearBetsForAllPlayers = (bets, betTypes) => {
-            const newBets = {};
-            Object.keys(bets).forEach(pId => {
-              newBets[pId] = {};
-              Object.keys(bets[pId]).forEach(betType => {
-                if (!betTypes.includes(betType)) {
-                  newBets[pId][betType] = bets[pId][betType];
-                }
-              });
-            });
-            return newBets;
-          };
+          if(isLoading) return(<div className="loading-screen"><div className="loading-spinner"></div><div style={{fontSize:'24px',color:'#ffd700',fontWeight:'bold'}}>🎲 Connecting to table...</div></div>);
+          if(!gameState) return(<div className="loading-screen"><div style={{fontSize:'24px',color:'#ff6666'}}>Failed to connect. Please refresh.</div></div>);
 
-          const getOddsWin = (point, bet) => {
-            if (point === 4 || point === 10) return bet * 2;
-            if (point === 5 || point === 9) return bet * 1.5;
-            if (point === 6 || point === 8) return bet * 1.2;
-            return 0;
-          };
+          const currentPlayer=gameState.players.find(p=>p.id===playerId);
+          const shooterId=gameState.playerOrder?.[gameState.currentShooter];
+          const isShooter=currentPlayer&&shooterId===playerId;
+          const shooter=gameState.players.find(p=>p.id===shooterId);
+          const currentShooterName=shooter?.name||'Waiting...';
+          const betsAreOff=gameState.phase==='comeout';
+          const totalOnTable=getTotalBetsOnTable();
+          const isAboveStarting=currentPlayer&&currentPlayer.chips>=STARTING_CHIPS;
 
-          const getPlaceWin = (num, bet) => {
-            if (num === 4 || num === 10) return Math.floor(bet * 1.8);
-            if (num === 5 || num === 9) return Math.floor(bet * 1.4);
-            if (num === 6 || num === 8) return Math.floor(bet * 1.166667);
-            return 0;
-          };
-
-          const getBuyWin = (num, bet) => {
-            if (num === 4 || num === 10) return bet * 2;
-            if (num === 5 || num === 9) return bet * 1.5;
-            if (num === 6 || num === 8) return bet * 1.2;
-            return 0;
-          };
-
-          const getHardwayWin = (num, bet) => {
-            if (num === 4 || num === 10) return bet * 7;
-            if (num === 6 || num === 8) return bet * 9;
-            return 0;
-          };
-
-          const showMessage = (msg) => {
-            setMessage(msg);
-            setTimeout(() => setMessage(''), 4000);
-          };
-
-          const getChipForAmount = (amount) => {
-            // Find best chip that represents the amount
-            for (let i = CHIP_VALUES.length - 1; i >= 0; i--) {
-              if (amount >= CHIP_VALUES[i].value) {
-                return CHIP_VALUES[i];
-              }
-            }
-            return CHIP_VALUES[0];
-          };
-
-          const CasinoChip = ({ chipInfo, onClick, disabled, selected, small = false, draggable = false, onDragStart, onDragEnd }) => {
-            const [isDragging, setIsDragging] = useState(false);
-
-            return (
-              <div 
-                className={`casino-chip ${small ? 'small' : ''} ${selected ? 'chip-selected' : ''} ${isDragging ? 'dragging' : ''}`}
-                style={{ 
-                  '--chip-color': chipInfo.color,
-                  opacity: disabled ? 0.5 : 1,
-                  cursor: disabled ? 'not-allowed' : (draggable ? 'grab' : 'pointer')
-                }}
-                onClick={() => !disabled && onClick && onClick(chipInfo)}
-                draggable={draggable && !disabled}
-                onDragStart={(e) => {
-                  if (draggable && !disabled && onDragStart) {
-                    setIsDragging(true);
-                    onDragStart(e);
-                  }
-                }}
-                onDragEnd={(e) => {
-                  setIsDragging(false);
-                  if (onDragEnd) onDragEnd(e);
-                }}
-              >
-                <span className="chip-value">
-                  ${chipInfo.value}
-                </span>
-              </div>
-            );
-          };
-
-          const Dice = ({ value }) => {
-            const dotPositions = {
-              1: [[50, 50]],
-              2: [[25, 25], [75, 75]],
-              3: [[25, 25], [50, 50], [75, 75]],
-              4: [[25, 25], [25, 75], [75, 25], [75, 75]],
-              5: [[25, 25], [25, 75], [50, 50], [75, 25], [75, 75]],
-              6: [[25, 25], [25, 50], [25, 75], [75, 25], [75, 50], [75, 75]]
-            };
-
-            return (
-              <div className="die" style={{ width: 80, height: 80, position: 'relative' }}>
-                {dotPositions[value].map((pos, i) => (
-                  <div 
-                    key={i}
-                    className="die-dot"
-                    style={{ position: 'absolute', left: `${pos[0]}%`, top: `${pos[1]}%`, transform: 'translate(-50%, -50%)' }}
-                  />
-                ))}
-              </div>
-            );
-          };
-
-          const BetBox = ({ betType, label, className = '', style = {}, isOff = false }) => {
-            const allBets = gameState?.bets || {};
-            const myBet = allBets[playerId]?.[betType];
-
-            return (
-              <div
-                onClick={() => selectedDenomination && placeBet(betType, label)}
-                className={`bet-box ${className} ${isOff ? 'off' : ''}`}
-                style={{...style, minHeight: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}
-              >
-                <div style={{ textAlign: 'center', color: '#ffd700', fontWeight: 'bold', fontSize: '14px', textShadow: '1px 1px 2px #000', position: 'relative', zIndex: 1 }}>
-                  {label}
-                  {isOff && <div style={{ fontSize: '10px', color: '#999' }}>OFF</div>}
-                </div>
-                
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexWrap: 'wrap', gap: '6px', zIndex: 2, alignItems: 'center', justifyContent: 'center' }}>
-                  {gameState?.players.map(player => {
-                    const playerBet = allBets[player.id]?.[betType];
-                    if (!playerBet) return null;
-                    
-                    const isMe = player.id === playerId;
-                    const chipInfo = getChipForAmount(playerBet);
-                    
-                    return (
-                      <div key={player.id} style={{ textAlign: 'center', display: 'flex', alignItems: 'center', gap: '4px', background: isMe ? 'rgba(255,215,0,0.4)' : 'rgba(0,0,0,0.3)', padding: '4px 6px', borderRadius: '6px', border: isMe ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.2)' }}>
-                        <CasinoChip 
-                          chipInfo={chipInfo} 
-                          onClick={() => {}} 
-                          disabled={false} 
-                          small={true}
-                          draggable={isMe}
-                          onDragStart={(e) => {
-                            setIsDraggingChip(true);
-                            setDraggedBetType(betType);
-                            e.dataTransfer.effectAllowed = 'move';
-                          }}
-                          onDragEnd={(e) => {
-                            setIsDraggingChip(false);
-                            setDraggedBetType(null);
-                          }}
-                        />
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                          <div style={{ fontSize: '10px', color: '#fff', fontWeight: 'bold', textShadow: '1px 1px 2px #000', lineHeight: '1.2' }}>
-                            {player.name.substring(0,6)}
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#ffd700', fontWeight: 'bold', textShadow: '1px 1px 2px #000', lineHeight: '1.2' }}>
-                            ${playerBet}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          };
-
-          if (!gameState) {
-            return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', color: 'white', fontSize: '24px' }}>Loading...</div>;
-          }
-
-          const currentPlayer = gameState.players.find(p => p.id === playerId);
-          const shooterId = gameState.playerOrder?.[gameState.currentShooter];
-          const isShooter = currentPlayer && shooterId === playerId;
-          const shooter = gameState.players.find(p => p.id === shooterId);
-          const currentShooterName = shooter?.name || 'Waiting...';
-          const betsAreOff = gameState.phase === 'comeout';
-          const totalOnTable = getTotalBetsOnTable();
-          const isAboveStarting = currentPlayer && currentPlayer.chips >= STARTING_CHIPS;
-
-          if (showJoinModal || !currentPlayer) {
-            return (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
-                <div style={{ background: 'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)', padding: '40px', borderRadius: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.5)', maxWidth: '500px', width: '100%', border: '3px solid #ffd700' }}>
-                  <h1 style={{ color: '#ffd700', fontSize: '36px', fontWeight: 'bold', marginBottom: '10px', textAlign: 'center', textShadow: '2px 2px 4px #000' }}>🎲 VEGAS CRAPS 🎲</h1>
-                  <p style={{ color: '#fff', textAlign: 'center', marginBottom: '30px' }}>Join the table and roll the dice!</p>
-                  
-                  <input
-                    type="text"
-                    placeholder="Enter your name"
-                    value={playerName}
-                    onChange={(e) => setPlayerName(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && joinGame()}
-                    style={{ width: '100%', padding: '15px', border: '3px solid #ffd700', borderRadius: '10px', marginBottom: '20px', fontSize: '18px', background: '#fff' }}
-                    maxLength={15}
-                    autoFocus
-                  />
-                  
-                  <button
-                    onClick={joinGame}
-                    disabled={!playerName.trim() || gameState.players.length >= MAX_PLAYERS}
-                    style={{ width: '100%', background: 'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)', color: '#fff', padding: '15px', borderRadius: '10px', fontSize: '20px', fontWeight: 'bold', border: 'none', cursor: 'pointer', boxShadow: '0 4px 8px rgba(0,0,0,0.3)' }}
-                  >
-                    {gameState.players.length >= MAX_PLAYERS ? 'TABLE FULL (6/6)' : `JOIN TABLE (${gameState.players.length}/6)`}
+          if(showJoinModal||!currentPlayer){
+            return(
+              <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh',padding:'20px'}}>
+                <div style={{background:'linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)',padding:'40px',borderRadius:'20px',boxShadow:'0 10px 40px rgba(0,0,0,0.5)',maxWidth:'500px',width:'100%',border:'3px solid #ffd700'}}>
+                  <h1 style={{color:'#ffd700',fontSize:'36px',fontWeight:'bold',marginBottom:'10px',textAlign:'center',textShadow:'2px 2px 4px #000'}}>🎲 VEGAS CRAPS 🎲</h1>
+                  <div style={{textAlign:'center',marginBottom:'5px'}}><span className="online-dot"></span><span style={{color:'#00ff00',fontSize:'14px'}}>ONLINE MULTIPLAYER</span></div>
+                  <p style={{color:'#fff',textAlign:'center',marginBottom:'30px'}}>Join the table and play with others in real-time!</p>
+                  <input type="text" placeholder="Enter your name" value={playerName}
+                    onChange={(e)=>setPlayerName(e.target.value)}
+                    onKeyDown={(e)=>e.key==='Enter'&&joinGame()}
+                    style={{width:'100%',padding:'15px',border:'3px solid #ffd700',borderRadius:'10px',marginBottom:'20px',fontSize:'18px',background:'#fff'}}
+                    maxLength={15} autoFocus/>
+                  <button onClick={joinGame} disabled={!playerName.trim()||gameState.players.length>=MAX_PLAYERS}
+                    style={{width:'100%',background:'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)',color:'#fff',padding:'15px',borderRadius:'10px',fontSize:'20px',fontWeight:'bold',border:'none',cursor:'pointer',boxShadow:'0 4px 8px rgba(0,0,0,0.3)'}}>
+                    {gameState.players.length>=MAX_PLAYERS?'TABLE FULL (6/6)':'JOIN TABLE ('+gameState.players.length+'/6)'}
                   </button>
-                  
-                  <div style={{ marginTop: '30px', color: '#fff', fontSize: '14px' }}>
-                    <p style={{ fontWeight: 'bold', marginBottom: '10px', color: '#ffd700' }}>Table Rules:</p>
-                    <ul style={{ listStyle: 'none', lineHeight: '1.8' }}>
-                      <li>💰 Starting chips: $250</li>
-                      <li>🎯 Table minimum: $15</li>
-                      <li>🎲 Prop minimum: $1</li>
-                      <li>👥 Max players: 6</li>
-                      <li>📊 Odds: 3-4-5x</li>
+                  <div style={{marginTop:'30px',color:'#fff',fontSize:'14px'}}>
+                    <p style={{fontWeight:'bold',marginBottom:'10px',color:'#ffd700'}}>Table Rules:</p>
+                    <ul style={{listStyle:'none',lineHeight:'1.8'}}>
+                      <li>💰 Starting chips: $250</li><li>🎯 Table minimum: $15</li><li>🎲 Prop minimum: $1</li>
+                      <li>👥 Max players: 6</li><li>📊 Odds: 3-4-5x</li><li>💵 Buy bets: 5% vig on win</li>
                     </ul>
                   </div>
-
-                  {gameState.players.length > 0 && (
-                    <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,215,0,0.1)', borderRadius: '10px', border: '1px solid #ffd700' }}>
-                      <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '10px', color: '#ffd700' }}>Players at table:</p>
-                      {gameState.playerOrder?.map((pid, idx) => {
-                        const p = gameState.players.find(pl => pl.id === pid);
-                        if (!p) return null;
-                        return (
-                          <div key={p.id} style={{ color: '#fff', fontSize: '14px', marginBottom: '5px' }}>
-                            {idx === gameState.currentShooter && '🎲 '}
-                            🎰 {p.name} (${p.chips})
-                          </div>
-                        );
+                  {gameState.players.length>0&&(
+                    <div style={{marginTop:'20px',padding:'15px',background:'rgba(255,215,0,0.1)',borderRadius:'10px',border:'1px solid #ffd700'}}>
+                      <p style={{fontWeight:'bold',fontSize:'14px',marginBottom:'10px',color:'#ffd700'}}>Players at table:</p>
+                      {gameState.playerOrder?.map((pid,idx)=>{const p=gameState.players.find(pl=>pl.id===pid);if(!p)return null;
+                        return <div key={p.id} style={{color:'#fff',fontSize:'14px',marginBottom:'5px'}}>{idx===gameState.currentShooter&&'🎲 '}🎰 {p.name} (${p.chips})</div>;
                       })}
                     </div>
                   )}
@@ -1089,375 +649,166 @@
             );
           }
 
-          const handleDropZoneDragOver = (e) => {
-            e.preventDefault();
-            e.currentTarget.classList.add('drag-over');
-          };
+          const handleDZOver=(e)=>{e.preventDefault();e.currentTarget.classList.add('drag-over');};
+          const handleDZLeave=(e)=>{e.currentTarget.classList.remove('drag-over');};
+          const handleDZDrop=(e)=>{e.preventDefault();e.currentTarget.classList.remove('drag-over');if(draggedBetType){removeBet(draggedBetType);setDraggedBetType(null);}};
 
-          const handleDropZoneDragLeave = (e) => {
-            e.currentTarget.classList.remove('drag-over');
-          };
-
-          const handleDropZoneDrop = (e) => {
-            e.preventDefault();
-            e.currentTarget.classList.remove('drag-over');
-            
-            if (draggedBetType) {
-              removeBet(draggedBetType);
-              setDraggedBetType(null);
-            }
-          };
-
-          return (
-            <div style={{ minHeight: '100vh', padding: '10px', background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)', position: 'relative' }}>
-              
-              {/* WIN/LOSS CENTER DISPLAY */}
-              {winLossDisplay && winLossDisplay.playerId === playerId && (
-                <div 
-                  className="win-loss-display"
-                  style={{
-                    position: 'fixed',
-                    top: '50%',
-                    left: '50%',
-                    transform: 'translate(-50%, -50%)',
-                    zIndex: 9999,
-                    background: winLossDisplay.type === 'win' 
-                      ? 'linear-gradient(135deg, #00ff00 0%, #00aa00 100%)' 
-                      : 'linear-gradient(135deg, #ff0000 0%, #aa0000 100%)',
-                    color: '#fff',
-                    padding: '40px 60px',
-                    borderRadius: '20px',
-                    fontSize: '48px',
-                    fontWeight: 'bold',
-                    textAlign: 'center',
-                    boxShadow: '0 10px 40px rgba(0,0,0,0.8)',
-                    border: '5px solid #ffd700',
-                    textShadow: '3px 3px 6px rgba(0,0,0,0.5)'
-                  }}
-                >
-                  {winLossDisplay.type === 'win' ? '+ $' : '- $'}{winLossDisplay.amount}
-                  <div style={{ fontSize: '24px', marginTop: '10px' }}>
-                    {winLossDisplay.type === 'win' ? '🎉 WINNER! 🎉' : '💔 LOST 💔'}
-                  </div>
+          return(
+            <div style={{minHeight:'100vh',padding:'10px',background:'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)',position:'relative'}}>
+              {winLossDisplay&&winLossDisplay.playerId===playerId&&(
+                <div className="win-loss-display" style={{position:'fixed',top:'50%',left:'50%',transform:'translate(-50%,-50%)',zIndex:9999,
+                  background:winLossDisplay.type==='win'?'linear-gradient(135deg, #00ff00 0%, #00aa00 100%)':'linear-gradient(135deg, #ff0000 0%, #aa0000 100%)',
+                  color:'#fff',padding:'40px 60px',borderRadius:'20px',fontSize:'48px',fontWeight:'bold',textAlign:'center',
+                  boxShadow:'0 10px 40px rgba(0,0,0,0.8)',border:'5px solid #ffd700',textShadow:'3px 3px 6px rgba(0,0,0,0.5)'}}>
+                  {winLossDisplay.type==='win'?'+ $':'- $'}{winLossDisplay.amount}
+                  <div style={{fontSize:'24px',marginTop:'10px'}}>{winLossDisplay.type==='win'?'🎉 WINNER! 🎉':'💔 LOST 💔'}</div>
                 </div>
               )}
-
-              {/* DEALER CALL */}
-              {dealerCall && (
-                <div style={{
-                  position: 'fixed',
-                  top: '20px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  zIndex: 1000,
-                  background: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',
-                  color: '#ffd700',
-                  padding: '20px 40px',
-                  borderRadius: '15px',
-                  fontSize: '32px',
-                  fontWeight: 'bold',
-                  textAlign: 'center',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.8)',
-                  border: '3px solid #ffd700',
-                  textShadow: '2px 2px 4px #000'
-                }}>
+              {dealerCall&&(
+                <div style={{position:'fixed',top:'20px',left:'50%',transform:'translateX(-50%)',zIndex:1000,
+                  background:'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',color:'#ffd700',padding:'20px 40px',borderRadius:'15px',
+                  fontSize:'32px',fontWeight:'bold',textAlign:'center',boxShadow:'0 8px 24px rgba(0,0,0,0.8)',border:'3px solid #ffd700',textShadow:'2px 2px 4px #000'}}>
                   {dealerCall}
                 </div>
               )}
-
               <div className="craps-table-container">
-                {/* Header with Chip Rack Info */}
-                <div style={{ background: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)', color: '#ffd700', padding: '15px', borderRadius: '10px', marginBottom: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '2px solid #ffd700' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                <div style={{background:'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',color:'#ffd700',padding:'15px',borderRadius:'10px',marginBottom:'10px',boxShadow:'0 4px 12px rgba(0,0,0,0.5)',border:'2px solid #ffd700'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'10px'}}>
                     <div>
-                      <h1 style={{ fontSize: '24px', fontWeight: 'bold', textShadow: '2px 2px 4px #000' }}>🎲 VEGAS CRAPS TABLE</h1>
-                      <div style={{ fontSize: '12px', color: '#fff' }}>Min: $15 • Prop: $1 • Odds: 3-4-5x</div>
+                      <h1 style={{fontSize:'24px',fontWeight:'bold',textShadow:'2px 2px 4px #000'}}>🎲 VEGAS CRAPS TABLE</h1>
+                      <div style={{fontSize:'12px',color:'#fff'}}><span className="online-dot"></span>LIVE • Min: $15 • Odds: 3-4-5x • Buy: 5% vig</div>
                     </div>
-                    <div className="chip-rack" style={{ textAlign: 'center', minWidth: '200px' }}>
-                      <div style={{ fontSize: '14px', color: '#ffd700', marginBottom: '5px', fontWeight: 'bold' }}>
-                        {currentPlayer.name}'s RACK
-                      </div>
-                      <div style={{ fontSize: '28px', fontWeight: 'bold', color: isAboveStarting ? '#00ff00' : '#ff0000' }}>
-                        ${currentPlayer.chips}
-                      </div>
-                      <div style={{ fontSize: '12px', color: '#fff', marginTop: '5px' }}>
-                        On Table: ${totalOnTable}
-                      </div>
-                      {currentPlayer.chips < TABLE_MIN && (
-                        <button onClick={rebuy} style={{ marginTop: '8px', background: '#ffd700', color: '#000', padding: '5px 10px', borderRadius: '5px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>
-                          Rebuy +$250
-                        </button>
+                    <div className="chip-rack" style={{textAlign:'center',minWidth:'200px'}}>
+                      <div style={{fontSize:'14px',color:'#ffd700',marginBottom:'5px',fontWeight:'bold'}}>{currentPlayer.name}'s RACK</div>
+                      <div style={{fontSize:'28px',fontWeight:'bold',color:isAboveStarting?'#00ff00':'#ff0000'}}>${currentPlayer.chips}</div>
+                      <div style={{fontSize:'12px',color:'#fff',marginTop:'5px'}}>On Table: ${totalOnTable}</div>
+                      {currentPlayer.chips<TABLE_MIN&&(
+                        <button onClick={rebuy} style={{marginTop:'8px',background:'#ffd700',color:'#000',padding:'5px 10px',borderRadius:'5px',border:'none',fontWeight:'bold',cursor:'pointer',fontSize:'12px'}}>Rebuy +$250</button>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Status Bar */}
-                <div style={{ background: '#000', color: '#fff', padding: '15px', borderRadius: '10px', marginBottom: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '3px solid #ffd700' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', fontSize: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div className={`puck ${gameState.phase === 'comeout' ? 'off' : 'on'}`}>
-                        {gameState.phase === 'comeout' ? 'OFF' : 'ON'}
-                      </div>
-                      <div style={{ fontWeight: 'bold' }}>
-                        {gameState.phase === 'comeout' ? (
-                          <span style={{ color: '#00ff00' }}>COME OUT ROLL</span>
-                        ) : (
-                          <span style={{ color: '#fff' }}>POINT IS <span style={{ color: '#ffd700', fontSize: '24px' }}>{gameState.point}</span></span>
-                        )}
+                <div style={{background:'#000',color:'#fff',padding:'15px',borderRadius:'10px',marginBottom:'10px',boxShadow:'0 4px 12px rgba(0,0,0,0.5)',border:'3px solid #ffd700'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:'10px',fontSize:'16px'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+                      <div className={'puck '+(gameState.phase==='comeout'?'off':'on')}>{gameState.phase==='comeout'?'OFF':'ON'}</div>
+                      <div style={{fontWeight:'bold'}}>
+                        {gameState.phase==='comeout'?<span style={{color:'#00ff00'}}>COME OUT ROLL</span>:
+                          <span style={{color:'#fff'}}>POINT IS <span style={{color:'#ffd700',fontSize:'24px'}}>{gameState.point}</span></span>}
                       </div>
                     </div>
-                    <div>
-                      <span style={{ fontWeight: 'bold', color: '#ffd700' }}>Shooter:</span> {currentShooterName}
-                      {isShooter && <span style={{ marginLeft: '10px', color: '#ff0000' }}>🎲 (YOU)</span>}
-                    </div>
-                    {gameState.lastTotal && (
-                      <div style={{ fontWeight: 'bold', color: '#ffd700' }}>Last: {gameState.lastTotal}</div>
-                    )}
+                    <div><span style={{fontWeight:'bold',color:'#ffd700'}}>Shooter:</span> {currentShooterName}{isShooter&&<span style={{marginLeft:'10px',color:'#ff0000'}}>🎲 (YOU)</span>}</div>
+                    {gameState.lastTotal&&<div style={{fontWeight:'bold',color:'#ffd700'}}>Last: {gameState.lastTotal}</div>}
                   </div>
                 </div>
 
-                {/* Message */}
-                {message && (
-                  <div style={{ background: 'linear-gradient(135deg, #0066ff 0%, #0044cc 100%)', color: '#fff', padding: '15px', borderRadius: '10px', marginBottom: '10px', textAlign: 'center', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(0,102,255,0.5)' }}>
-                    {message}
+                {message&&<div style={{background:'linear-gradient(135deg, #0066ff 0%, #0044cc 100%)',color:'#fff',padding:'15px',borderRadius:'10px',marginBottom:'10px',textAlign:'center',fontWeight:'bold',boxShadow:'0 4px 12px rgba(0,102,255,0.5)'}}>{message}</div>}
+
+                {isDraggingChip&&(
+                  <div className="drop-zone" onDragOver={handleDZOver} onDragLeave={handleDZLeave} onDrop={handleDZDrop} style={{marginBottom:'10px'}}>
+                    <div style={{fontSize:'20px',color:'#ffd700',fontWeight:'bold'}}>⬇️ Drop Chip Here to Return to Rack ⬇️</div>
                   </div>
                 )}
 
-                {/* DROP ZONE for dragged chips */}
-                {isDraggingChip && (
-                  <div 
-                    className="drop-zone"
-                    onDragOver={handleDropZoneDragOver}
-                    onDragLeave={handleDropZoneDragLeave}
-                    onDrop={handleDropZoneDrop}
-                    style={{ marginBottom: '10px' }}
-                  >
-                    <div style={{ fontSize: '20px', color: '#ffd700', fontWeight: 'bold' }}>
-                      ⬇️ Drop Chip Here to Return to Rack ⬇️
+                <div className="felt-green" style={{borderRadius:'50px 50px 20px 20px',padding:'20px',border:'12px solid #8b4513',boxShadow:'0 8px 24px rgba(0,0,0,0.6), inset 0 0 30px rgba(0,0,0,0.4)',marginBottom:'10px'}}>
+                  <div style={{marginBottom:'15px'}}>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+                      <BetBox betType="come" label="COME" style={{height:'60px',fontSize:'24px',color:'#ff0000',background:'rgba(255,255,255,0.1)'}}/>
+                      <BetBox betType="dontcome" label="DON'T COME" style={{height:'60px',fontSize:'16px',background:'rgba(255,255,255,0.1)'}}/>
                     </div>
                   </div>
-                )}
-
-                {/* Chip Selection & Presets */}
-                <div style={{ background: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)', padding: '15px', borderRadius: '10px', marginBottom: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '2px solid #ffd700' }}>
-                  <div style={{ marginBottom: '10px' }}>
-                    <div style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}>
-                      Select Denomination:
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                      {CHIP_VALUES.map(chipInfo => (
-                        <CasinoChip 
-                          key={chipInfo.value}
-                          chipInfo={chipInfo}
-                          onClick={(chip) => setSelectedDenomination(chip.value)}
-                          disabled={currentPlayer.chips < chipInfo.value}
-                          selected={selectedDenomination === chipInfo.value}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  
-                  <div style={{ borderTop: '1px solid #ffd700', paddingTop: '10px' }}>
-                    <div style={{ color: '#ffd700', fontWeight: 'bold', fontSize: '14px', marginBottom: '8px' }}>
-                      Quick Actions:
-                    </div>
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                      <button onClick={() => placePresetBet('inside')} disabled={!selectedDenomination} style={{ background: '#000', color: '#fff', padding: '8px 16px', borderRadius: '5px', border: '2px solid #ffd700', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>
-                        INSIDE (5,6,8,9)
-                      </button>
-                      <button onClick={() => placePresetBet('outside')} disabled={!selectedDenomination} style={{ background: '#000', color: '#fff', padding: '8px 16px', borderRadius: '5px', border: '2px solid #ffd700', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>
-                        OUTSIDE (4,10 Buy)
-                      </button>
-                      <button onClick={() => placePresetBet('across')} disabled={!selectedDenomination} style={{ background: '#000', color: '#fff', padding: '8px 16px', borderRadius: '5px', border: '2px solid #ffd700', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>
-                        ACROSS (All)
-                      </button>
-                      <button onClick={pullAllBets} disabled={totalOnTable === 0} style={{ background: '#ff0000', color: '#fff', padding: '8px 16px', borderRadius: '5px', border: '2px solid #fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>
-                        PULL BETS DOWN
-                      </button>
-                      <button onClick={() => setSelectedDenomination(null)} style={{ background: '#666', color: '#fff', padding: '8px 16px', borderRadius: '5px', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>
-                        Clear Selection
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* CRAPS TABLE */}
-                <div className="felt-green" style={{ borderRadius: '50px 50px 20px 20px', padding: '20px', border: '12px solid #8b4513', boxShadow: '0 8px 24px rgba(0,0,0,0.6), inset 0 0 30px rgba(0,0,0,0.4)', marginBottom: '10px' }}>
-                  
-                  <div style={{ marginBottom: '15px' }}>
-                    <BetBox betType="dontpass" label="DON'T PASS BAR 🎲🎲" style={{ height: '50px', fontSize: '16px', background: 'rgba(255,255,255,0.1)', marginBottom: '10px' }} />
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                      <BetBox betType="come" label="COME" style={{ height: '60px', fontSize: '24px', color: '#ff0000', background: 'rgba(255,255,255,0.1)' }} />
-                      <BetBox betType="dontcome" label="DON'T COME" style={{ height: '60px', fontSize: '16px', background: 'rgba(255,255,255,0.1)' }} />
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '8px', marginBottom: '15px' }}>
-                    {[4, 5, 6, 8, 9, 10].map(num => (
-                      <div key={num} style={{ position: 'relative' }}>
-                        <div style={{ fontSize: num === 6 || num === 9 ? '32px' : '40px', fontWeight: 'bold', textAlign: 'center', color: '#ffd700', textShadow: '2px 2px 4px #000', marginBottom: '5px', fontStyle: num === 6 || num === 9 ? 'italic' : 'normal' }}>
-                          {num === 6 ? 'six' : num === 9 ? 'Nine' : num}
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(6, 1fr)',gap:'8px',marginBottom:'15px'}}>
+                    {[4,5,6,8,9,10].map(num=>(
+                      <div key={num} style={{position:'relative'}}>
+                        <div style={{fontSize:num===6||num===9?'32px':'40px',fontWeight:'bold',textAlign:'center',color:'#ffd700',textShadow:'2px 2px 4px #000',marginBottom:'5px',fontStyle:num===6||num===9?'italic':'normal'}}>
+                          {num===6?'six':num===9?'Nine':num}
                         </div>
-                        
-                        <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: '4px' }}>
-                          <BetBox 
-                            betType={`place${num}`} 
-                            label="PLACE" 
-                            isOff={betsAreOff}
-                            style={{ 
-                              height: '50px',
-                              fontSize: '11px',
-                              background: gameState.point === num ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.1)',
-                              border: gameState.point === num ? '3px solid #fff' : '2px solid #ffd700'
-                            }} 
-                          />
-                          <BetBox 
-                            betType={`buy${num}`} 
-                            label="BUY" 
-                            isOff={betsAreOff}
-                            style={{ 
-                              height: '50px',
-                              fontSize: '11px',
-                              background: 'rgba(100,150,255,0.2)'
-                            }} 
-                          />
+                        <div style={{display:'grid',gridTemplateRows:'1fr 1fr',gap:'4px'}}>
+                          <BetBox betType={'place'+num} label="PLACE" isOff={betsAreOff} style={{height:'50px',fontSize:'11px',background:gameState.point===num?'rgba(255,255,255,0.25)':'rgba(255,255,255,0.1)',border:gameState.point===num?'3px solid #fff':'2px solid #ffd700'}}/>
+                          <BetBox betType={'buy'+num} label={'BUY\n(5% vig)'} isOff={betsAreOff} style={{height:'50px',fontSize:'10px',background:'rgba(100,150,255,0.2)',whiteSpace:'pre-line'}}/>
                         </div>
-                        
-                        {gameState.point === num && (
-                          <div className="puck on" style={{ 
-                            position: 'absolute', 
-                            top: '0px', 
-                            right: '0px'
-                          }}>
-                            ON
-                          </div>
-                        )}
+                        <ComeBetDisplay number={num}/>
+                        {gameState.point===num&&<div className="puck on" style={{position:'absolute',top:'0px',right:'0px'}}>ON</div>}
                       </div>
                     ))}
                   </div>
-
-                  <div style={{ marginBottom: '15px' }}>
-                    <BetBox betType="field" label="FIELD • 2-3-4-9-10-11-12 • Pay Double 2&12" style={{ height: '60px', fontSize: '14px', background: 'rgba(255,255,255,0.1)', color: '#ff0000' }} />
-                  </div>
-
-                  <div style={{ background: 'rgba(0,0,0,0.4)', padding: '15px', borderRadius: '15px', marginBottom: '15px' }}>
-                    <div style={{ marginBottom: '12px' }}>
-                      <div style={{ color: '#ffd700', fontSize: '14px', fontWeight: 'bold', textAlign: 'center', marginBottom: '8px', textShadow: '1px 1px 2px #000' }}>HARDWAYS</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                        {[4, 6, 8, 10].map(num => (
-                          <BetBox
-                            key={num}
-                            betType={`hard${num}`}
-                            label={`🎲🎲\nHard ${num}\n${num === 4 || num === 10 ? '7:1' : '9:1'}`}
-                            isOff={betsAreOff}
-                            style={{ height: '70px', fontSize: '11px', background: 'rgba(255,200,0,0.2)', whiteSpace: 'pre-line' }}
-                          />
-                        ))}
+                  <div style={{marginBottom:'15px'}}><BetBox betType="field" label="FIELD • 2-3-4-9-10-11-12 • Pay Double 2&12" style={{height:'60px',fontSize:'14px',background:'rgba(255,255,255,0.1)',color:'#ff0000'}}/></div>
+                  <div style={{background:'rgba(0,0,0,0.4)',padding:'15px',borderRadius:'15px',marginBottom:'15px'}}>
+                    <div style={{marginBottom:'12px'}}>
+                      <div style={{color:'#ffd700',fontSize:'14px',fontWeight:'bold',textAlign:'center',marginBottom:'8px',textShadow:'1px 1px 2px #000'}}>HARDWAYS</div>
+                      <div style={{display:'grid',gridTemplateColumns:'repeat(4, 1fr)',gap:'8px'}}>
+                        {[4,6,8,10].map(num=>(<BetBox key={num} betType={'hard'+num} label={'🎲🎲\nHard '+num+'\n'+(num===4||num===10?'7:1':'9:1')} isOff={betsAreOff} style={{height:'70px',fontSize:'11px',background:'rgba(255,200,0,0.2)',whiteSpace:'pre-line'}}/>))}
                       </div>
                     </div>
-
                     <div>
-                      <div style={{ color: '#ffd700', fontSize: '14px', fontWeight: 'bold', textAlign: 'center', marginBottom: '8px', textShadow: '1px 1px 2px #000' }}>ONE ROLL BETS</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                        <BetBox betType="horn" label="HORN\n30:1 / 15:1" style={{ height: '60px', fontSize: '12px', background: 'rgba(255,100,100,0.3)', whiteSpace: 'pre-line' }} />
-                        <BetBox betType="ce" label="C & E" style={{ height: '60px', fontSize: '18px', background: 'rgba(255,100,100,0.3)' }} />
+                      <div style={{color:'#ffd700',fontSize:'14px',fontWeight:'bold',textAlign:'center',marginBottom:'8px',textShadow:'1px 1px 2px #000'}}>ONE ROLL BETS</div>
+                      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px'}}>
+                        <BetBox betType="horn" label={'HORN\n30:1 / 15:1'} style={{height:'60px',fontSize:'12px',background:'rgba(255,100,100,0.3)',whiteSpace:'pre-line'}}/>
+                        <BetBox betType="ce" label="C & E" style={{height:'60px',fontSize:'18px',background:'rgba(255,100,100,0.3)'}}/>
                       </div>
                     </div>
                   </div>
-
-                  {gameState.point && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '15px' }}>
-                      <BetBox betType="passodds" label="ODDS ON PASS" style={{ height: '50px', background: 'rgba(0,255,0,0.2)', fontSize: '13px' }} />
-                      <BetBox betType="dontpassodds" label="ODDS ON DON'T PASS" style={{ height: '50px', background: 'rgba(0,255,0,0.2)', fontSize: '12px' }} />
-                    </div>
-                  )}
-
-                  {/* PASS LINE AT BOTTOM */}
-                  <div>
-                    <BetBox betType="pass" label="PASS LINE" style={{ height: '70px', fontSize: '24px', background: 'rgba(255,255,255,0.15)', fontWeight: 'bold' }} />
-                  </div>
-                </div>
-
-                {/* Dice and Roll */}
-                <div style={{ background: '#fff', padding: '20px', borderRadius: '10px', marginBottom: '10px', boxShadow: '0 8px 16px rgba(0,0,0,0.4)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', marginBottom: '20px' }}>
-                    <Dice value={diceValues.die1} />
-                    <Dice value={diceValues.die2} />
-                  </div>
-                  
-                  {isShooter ? (
-                    <button
-                      onClick={rollDice}
-                      disabled={isRolling}
-                      style={{ 
-                        width: '100%', 
-                        background: isRolling ? '#666' : 'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)', 
-                        color: '#fff', 
-                        padding: '20px', 
-                        borderRadius: '10px', 
-                        fontSize: '24px', 
-                        fontWeight: 'bold', 
-                        border: 'none', 
-                        cursor: isRolling ? 'not-allowed' : 'pointer',
-                        boxShadow: '0 6px 12px rgba(0,0,0,0.4)'
-                      }}
-                    >
-                      {isRolling ? '🎲 ROLLING...' : '🎲 ROLL DICE'}
-                    </button>
-                  ) : (
-                    <div style={{ textAlign: 'center', color: '#666', padding: '20px', fontWeight: 'bold', fontSize: '18px' }}>
-                      Waiting for {currentShooterName} to roll...
+                  {gameState.point&&(
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'10px'}}>
+                      <BetBox betType="passodds" label="ODDS ON PASS" style={{height:'50px',background:'rgba(0,255,0,0.2)',fontSize:'13px'}}/>
+                      <BetBox betType="dontpassodds" label="ODDS ON DON'T PASS" style={{height:'50px',background:'rgba(0,255,0,0.2)',fontSize:'12px'}}/>
                     </div>
                   )}
                 </div>
 
-                {/* Players - Ordered by join time */}
-                <div style={{ background: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)', color: '#fff', padding: '15px', borderRadius: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '2px solid #ffd700' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                    <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: '#ffd700' }}>Players ({gameState.players.length}/6)</h3>
-                    <button 
-                      onClick={() => {
-                        if (window.confirm('Reset table? All players and bets will be cleared.')) {
-                          const newGame = initializeGame();
-                          saveGameState(newGame);
-                          localStorage.removeItem('craps-player-id');
-                          setPlayerId(null);
-                          setShowJoinModal(true);
-                        }
-                      }}
-                      style={{ background: '#666', color: '#fff', padding: '8px 15px', borderRadius: '5px', border: 'none', fontSize: '12px', cursor: 'pointer' }}
-                    >
-                      Reset
+                <div style={{background:'#fff',padding:'20px',borderRadius:'10px',marginBottom:'10px',boxShadow:'0 8px 16px rgba(0,0,0,0.4)'}}>
+                  <div style={{display:'flex',justifyContent:'center',gap:'20px',marginBottom:'20px'}}><Dice value={diceValues.die1}/><Dice value={diceValues.die2}/></div>
+                  {isShooter?(
+                    <button onClick={rollDice} disabled={isRolling}
+                      style={{width:'100%',background:isRolling?'#666':'linear-gradient(135deg, #ff0000 0%, #cc0000 100%)',color:'#fff',padding:'20px',borderRadius:'10px',fontSize:'24px',fontWeight:'bold',border:'none',cursor:isRolling?'not-allowed':'pointer',boxShadow:'0 6px 12px rgba(0,0,0,0.4)'}}>
+                      {isRolling?'🎲 ROLLING...':'🎲 ROLL DICE'}
                     </button>
+                  ):(
+                    <div style={{textAlign:'center',color:'#666',padding:'20px',fontWeight:'bold',fontSize:'18px'}}>Waiting for {currentShooterName} to roll...</div>
+                  )}
+                </div>
+
+                <div style={{background:'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',padding:'15px',borderRadius:'10px',marginBottom:'10px',boxShadow:'0 4px 12px rgba(0,0,0,0.5)',border:'2px solid #ffd700'}}>
+                  <div style={{marginBottom:'10px'}}>
+                    <div style={{color:'#ffd700',fontWeight:'bold',fontSize:'14px',marginBottom:'8px'}}>Select Denomination:</div>
+                    <div style={{display:'flex',gap:'10px',flexWrap:'wrap',justifyContent:'center'}}>
+                      {CHIP_VALUES.map(ci=>(<CasinoChip key={ci.value} chipInfo={ci} onClick={(c)=>setSelectedDenomination(c.value)} disabled={currentPlayer.chips<ci.value} selected={selectedDenomination===ci.value}/>))}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {gameState.playerOrder?.map((pid, idx) => {
-                      const player = gameState.players.find(p => p.id === pid);
-                      if (!player) return null;
-                      
-                      return (
-                        <div
-                          key={player.id}
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            padding: '12px',
-                            borderRadius: '8px',
-                            background: player.id === playerId ? 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)' : '#333',
-                            color: player.id === playerId ? '#000' : '#fff',
-                            fontWeight: 'bold',
-                            border: idx === gameState.currentShooter ? '3px solid #ff0000' : 'none'
-                          }}
-                        >
-                          <span>
-                            {idx === gameState.currentShooter && '🎲 '}
-                            {player.name}
-                            {player.id === playerId && ' (YOU)'}
-                          </span>
-                          <span style={{ fontSize: '18px', color: player.id === playerId ? (player.chips >= STARTING_CHIPS ? '#00aa00' : '#ff0000') : (player.chips >= STARTING_CHIPS ? '#00ff00' : '#ff6666') }}>${player.chips}</span>
+                  <div style={{borderTop:'1px solid #ffd700',paddingTop:'10px'}}>
+                    <div style={{color:'#ffd700',fontWeight:'bold',fontSize:'14px',marginBottom:'8px'}}>Quick Actions:</div>
+                    <div style={{display:'flex',gap:'8px',flexWrap:'wrap',justifyContent:'center'}}>
+                      <button onClick={()=>placePresetBet('inside')} disabled={!selectedDenomination} style={{background:'#000',color:'#fff',padding:'8px 16px',borderRadius:'5px',border:'2px solid #ffd700',fontWeight:'bold',cursor:'pointer',fontSize:'12px'}}>INSIDE (5,6,8,9)</button>
+                      <button onClick={()=>placePresetBet('outside')} disabled={!selectedDenomination} style={{background:'#000',color:'#fff',padding:'8px 16px',borderRadius:'5px',border:'2px solid #ffd700',fontWeight:'bold',cursor:'pointer',fontSize:'12px'}}>OUTSIDE (4,10 Buy)</button>
+                      <button onClick={()=>placePresetBet('across')} disabled={!selectedDenomination} style={{background:'#000',color:'#fff',padding:'8px 16px',borderRadius:'5px',border:'2px solid #ffd700',fontWeight:'bold',cursor:'pointer',fontSize:'12px'}}>ACROSS (All)</button>
+                      <button onClick={pullAllBets} disabled={totalOnTable===0} style={{background:'#ff0000',color:'#fff',padding:'8px 16px',borderRadius:'5px',border:'2px solid #fff',fontWeight:'bold',cursor:'pointer',fontSize:'12px'}}>PULL BETS DOWN</button>
+                      <button onClick={()=>setSelectedDenomination(null)} style={{background:'#666',color:'#fff',padding:'8px 16px',borderRadius:'5px',border:'none',fontWeight:'bold',cursor:'pointer',fontSize:'12px'}}>Clear Selection</button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="felt-green" style={{borderRadius:'20px',padding:'15px',border:'8px solid #8b4513',boxShadow:'0 8px 24px rgba(0,0,0,0.6), inset 0 0 20px rgba(0,0,0,0.3)',marginBottom:'10px'}}>
+                  <div style={{marginBottom:'10px'}}><BetBox betType="pass" label="PASS LINE" style={{height:'70px',fontSize:'28px',background:'rgba(255,255,255,0.15)',fontWeight:'bold'}}/></div>
+                  <div><BetBox betType="dontpass" label="DON'T PASS BAR 🎲🎲" style={{height:'60px',fontSize:'18px',background:'rgba(255,255,255,0.1)'}}/></div>
+                </div>
+
+                <div style={{background:'linear-gradient(135deg, #000 0%, #1a1a1a 100%)',color:'#fff',padding:'15px',borderRadius:'10px',boxShadow:'0 4px 12px rgba(0,0,0,0.5)',border:'2px solid #ffd700'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'15px'}}>
+                    <h3 style={{fontWeight:'bold',fontSize:'18px',color:'#ffd700'}}>Players ({gameState.players.length}/6)</h3>
+                    <button onClick={async()=>{if(window.confirm('Reset table? All players and bets will be cleared.')){const ng=initializeGame();await saveToServer(ng);sessionStorage.removeItem('craps-player-id');setPlayerId(null);playerIdRef.current=null;setShowJoinModal(true);}}}
+                      style={{background:'#666',color:'#fff',padding:'8px 15px',borderRadius:'5px',border:'none',fontSize:'12px',cursor:'pointer'}}>Reset</button>
+                  </div>
+                  <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
+                    {gameState.playerOrder?.map((pid,idx)=>{
+                      const player=gameState.players.find(p=>p.id===pid); if(!player)return null;
+                      return(
+                        <div key={player.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'12px',borderRadius:'8px',
+                          background:player.id===playerId?'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)':'#333',
+                          color:player.id===playerId?'#000':'#fff',fontWeight:'bold',
+                          border:idx===gameState.currentShooter?'3px solid #ff0000':'none'}}>
+                          <span>{idx===gameState.currentShooter&&'🎲 '}{player.name}{player.id===playerId&&' (YOU)'}</span>
+                          <span style={{fontSize:'18px',color:player.id===playerId?(player.chips>=STARTING_CHIPS?'#00aa00':'#ff0000'):(player.chips>=STARTING_CHIPS?'#00ff00':'#ff6666')}}>${player.chips}</span>
                         </div>
                       );
                     })}
@@ -1467,8 +818,7 @@
             </div>
           );
         };
-
-        ReactDOM.render(<CrapsGame />, document.getElementById('root'));
+        ReactDOM.render(<CrapsGame/>,document.getElementById('root'));
     </script>
 </body>
 </html>
