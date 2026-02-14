@@ -32,17 +32,16 @@
         }
         
         .casino-chip.small {
-            width: 30px;
-            height: 30px;
-            font-size: 9px;
+            width: 35px;
+            height: 35px;
+            font-size: 11px;
         }
         
         .casino-chip:hover { transform: scale(1.1); }
         .casino-chip:active { transform: scale(0.95); }
         .casino-chip.dragging { 
-            opacity: 0.7; 
-            transform: scale(1.2);
-            cursor: grabbing;
+            opacity: 0.5; 
+            cursor: grabbing !important;
         }
         
         .casino-chip::before {
@@ -111,6 +110,22 @@
         .bet-box.off {
             opacity: 0.5;
             border-color: #666;
+        }
+
+        /* Drop zone for chips */
+        .drop-zone {
+            border: 3px dashed #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .drop-zone.drag-over {
+            background: rgba(255, 215, 0, 0.3);
+            border-color: #fff;
+            transform: scale(1.02);
         }
         
         /* Dice styling */
@@ -210,7 +225,8 @@
           const [message, setMessage] = useState('');
           const [dealerCall, setDealerCall] = useState('');
           const [winLossDisplay, setWinLossDisplay] = useState(null);
-          const [draggedBet, setDraggedBet] = useState(null);
+          const [isDraggingChip, setIsDraggingChip] = useState(false);
+          const [draggedBetType, setDraggedBetType] = useState(null);
 
           const CHIP_VALUES = [
             { value: 1, color: '#ffffff', name: 'White' },
@@ -257,6 +273,7 @@
 
           const initializeGame = () => ({
             players: [],
+            playerOrder: [], // Track join order for shooter rotation
             currentShooter: 0,
             point: null,
             phase: 'comeout',
@@ -321,6 +338,7 @@
             const updatedGame = {
               ...currentGame,
               players: [...currentGame.players, newPlayer],
+              playerOrder: [...(currentGame.playerOrder || []), newPlayerId], // Add to end
               bets: { ...currentGame.bets, [newPlayerId]: {} }
             };
 
@@ -344,6 +362,14 @@
             showMessage(`Added $${STARTING_CHIPS} to your stack`);
           };
 
+          const getMaxOdds = (point, passLineBet) => {
+            // 3-4-5x odds: 3x on 4&10, 4x on 5&9, 5x on 6&8
+            if (point === 4 || point === 10) return passLineBet * 3;
+            if (point === 5 || point === 9) return passLineBet * 4;
+            if (point === 6 || point === 8) return passLineBet * 5;
+            return 0;
+          };
+
           const placeBet = (betType, betLabel, amount = null) => {
             if (!selectedDenomination && !amount) {
               showMessage('Select a chip denomination first');
@@ -357,6 +383,29 @@
             if (player.chips < betAmount) {
               showMessage('Not enough chips');
               return;
+            }
+
+            // Check odds bet limits
+            if (betType === 'passodds' && gameState.point) {
+              const passLineBet = (gameState.bets[playerId]?.pass || 0);
+              const currentOdds = (gameState.bets[playerId]?.passodds || 0);
+              const maxOdds = getMaxOdds(gameState.point, passLineBet);
+              
+              if (currentOdds + betAmount > maxOdds) {
+                showMessage(`Max odds: ${maxOdds / passLineBet}x your pass line bet ($${maxOdds})`);
+                return;
+              }
+            }
+
+            if (betType === 'dontpassodds' && gameState.point) {
+              const dontPassBet = (gameState.bets[playerId]?.dontpass || 0);
+              const currentOdds = (gameState.bets[playerId]?.dontpassodds || 0);
+              const maxOdds = getMaxOdds(gameState.point, dontPassBet);
+              
+              if (currentOdds + betAmount > maxOdds) {
+                showMessage(`Max odds: ${maxOdds / dontPassBet}x your don't pass bet ($${maxOdds})`);
+                return;
+              }
             }
 
             if (['pass', 'dontpass'].includes(betType) && betAmount < TABLE_MIN) {
@@ -464,28 +513,38 @@
               return;
             }
 
+            const currentShooterId = gameState.playerOrder[gameState.currentShooter];
+            const isCurrentShooter = playerId === currentShooterId;
+            const point = gameState.point;
+
             let bets = [];
             if (preset === 'inside') {
-              bets = [
-                { type: 'place5', label: '5 Place' },
-                { type: 'place6', label: '6 Place' },
-                { type: 'place8', label: '8 Place' },
-                { type: 'place9', label: '9 Place' }
-              ];
+              // Inside: 5, 6, 8, 9 (skip if shooter and it's the point)
+              [5, 6, 8, 9].forEach(num => {
+                if (isCurrentShooter && num === point) return; // Skip shooter's point
+                bets.push({ type: `place${num}`, label: `${num} Place` });
+              });
             } else if (preset === 'outside') {
-              bets = [
-                { type: 'buy4', label: '4 Buy' },
-                { type: 'buy10', label: '10 Buy' }
-              ];
+              // Outside: Buy 4 and 10 (skip if shooter and it's the point)
+              [4, 10].forEach(num => {
+                if (isCurrentShooter && num === point) return; // Skip shooter's point
+                bets.push({ type: `buy${num}`, label: `${num} Buy` });
+              });
             } else if (preset === 'across') {
-              bets = [
-                { type: 'buy4', label: '4 Buy' },
-                { type: 'place5', label: '5 Place' },
-                { type: 'place6', label: '6 Place' },
-                { type: 'place8', label: '8 Place' },
-                { type: 'place9', label: '9 Place' },
-                { type: 'buy10', label: '10 Buy' }
-              ];
+              // Across: All numbers (4&10 buy, rest place) - skip shooter's point
+              [4, 5, 6, 8, 9, 10].forEach(num => {
+                if (isCurrentShooter && num === point) return; // Skip shooter's point
+                if (num === 4 || num === 10) {
+                  bets.push({ type: `buy${num}`, label: `${num} Buy` });
+                } else {
+                  bets.push({ type: `place${num}`, label: `${num} Place` });
+                }
+              });
+            }
+
+            if (bets.length === 0) {
+              showMessage('No bets to place (all numbers covered)');
+              return;
             }
 
             const totalCost = selectedDenomination * bets.length;
@@ -508,7 +567,9 @@
           const rollDice = async () => {
             if (isRolling) return;
             
-            const shooter = gameState.players[gameState.currentShooter];
+            const shooterId = gameState.playerOrder[gameState.currentShooter];
+            const shooter = gameState.players.find(p => p.id === shooterId);
+            
             if (!shooter || shooter.id !== playerId) {
               showMessage('Not your turn to shoot');
               return;
@@ -564,21 +625,15 @@
                 messages.push('Natural! Pass wins');
                 gameState.players.forEach(p => {
                   const bets = gameState.bets[p.id] || {};
-                  if (bets.pass) {
-                    payouts[p.id] += bets.pass;
-                  }
-                  if (bets.dontpass) {
-                    losses[p.id] += bets.dontpass;
-                  }
+                  if (bets.pass) payouts[p.id] += bets.pass;
+                  if (bets.dontpass) losses[p.id] += bets.dontpass;
                 });
                 updatedGame.bets = clearBetsForAllPlayers(gameState.bets, ['pass', 'dontpass']);
               } else if (total === 2 || total === 3 || total === 12) {
                 messages.push('Craps!');
                 gameState.players.forEach(p => {
                   const bets = gameState.bets[p.id] || {};
-                  if (bets.pass) {
-                    losses[p.id] += bets.pass;
-                  }
+                  if (bets.pass) losses[p.id] += bets.pass;
                   if (bets.dontpass) {
                     if (total === 12) {
                       // Push
@@ -621,7 +676,8 @@
                 
                 updatedGame.point = null;
                 updatedGame.phase = 'comeout';
-                updatedGame.currentShooter = (gameState.currentShooter + 1) % gameState.players.length;
+                // CLOCKWISE: Move to next player in playerOrder
+                updatedGame.currentShooter = (gameState.currentShooter + 1) % gameState.playerOrder.length;
                 updatedGame.bets = {};
               } else if (total === gameState.point) {
                 messages.push('Point made! Pass wins');
@@ -656,6 +712,7 @@
               }
             }
 
+            // Field, place, buy, hardways, props - same as before
             if ([2, 3, 4, 9, 10, 11, 12].includes(total)) {
               gameState.players.forEach(p => {
                 const bets = gameState.bets[p.id] || {};
@@ -841,23 +898,46 @@
             setTimeout(() => setMessage(''), 4000);
           };
 
-          const CasinoChip = ({ chipInfo, onClick, disabled, selected, small = false, draggable = false, onDragStart }) => (
-            <div 
-              className={`casino-chip ${small ? 'small' : ''} ${selected ? 'chip-selected' : ''}`}
-              style={{ 
-                '--chip-color': chipInfo.color,
-                opacity: disabled ? 0.5 : 1,
-                cursor: disabled ? 'not-allowed' : (draggable ? 'grab' : 'pointer')
-              }}
-              onClick={() => !disabled && onClick && onClick(chipInfo)}
-              draggable={draggable && !disabled}
-              onDragStart={onDragStart}
-            >
-              <span className="chip-value">
-                ${chipInfo.value}
-              </span>
-            </div>
-          );
+          const getChipForAmount = (amount) => {
+            // Find best chip that represents the amount
+            for (let i = CHIP_VALUES.length - 1; i >= 0; i--) {
+              if (amount >= CHIP_VALUES[i].value) {
+                return CHIP_VALUES[i];
+              }
+            }
+            return CHIP_VALUES[0];
+          };
+
+          const CasinoChip = ({ chipInfo, onClick, disabled, selected, small = false, draggable = false, onDragStart, onDragEnd }) => {
+            const [isDragging, setIsDragging] = useState(false);
+
+            return (
+              <div 
+                className={`casino-chip ${small ? 'small' : ''} ${selected ? 'chip-selected' : ''} ${isDragging ? 'dragging' : ''}`}
+                style={{ 
+                  '--chip-color': chipInfo.color,
+                  opacity: disabled ? 0.5 : 1,
+                  cursor: disabled ? 'not-allowed' : (draggable ? 'grab' : 'pointer')
+                }}
+                onClick={() => !disabled && onClick && onClick(chipInfo)}
+                draggable={draggable && !disabled}
+                onDragStart={(e) => {
+                  if (draggable && !disabled && onDragStart) {
+                    setIsDragging(true);
+                    onDragStart(e);
+                  }
+                }}
+                onDragEnd={(e) => {
+                  setIsDragging(false);
+                  if (onDragEnd) onDragEnd(e);
+                }}
+              >
+                <span className="chip-value">
+                  ${chipInfo.value}
+                </span>
+              </div>
+            );
+          };
 
           const Dice = ({ value }) => {
             const dotPositions = {
@@ -886,23 +966,9 @@
             const allBets = gameState?.bets || {};
             const myBet = allBets[playerId]?.[betType];
 
-            const handleDragOver = (e) => {
-              e.preventDefault();
-            };
-
-            const handleDrop = (e) => {
-              e.preventDefault();
-              if (draggedBet && draggedBet.betType === betType && draggedBet.playerId === playerId) {
-                removeBet(betType);
-                setDraggedBet(null);
-              }
-            };
-
             return (
               <div
                 onClick={() => selectedDenomination && placeBet(betType, label)}
-                onDragOver={handleDragOver}
-                onDrop={handleDrop}
                 className={`bet-box ${className} ${isOff ? 'off' : ''}`}
                 style={{...style, minHeight: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}
               >
@@ -911,29 +977,38 @@
                   {isOff && <div style={{ fontSize: '10px', color: '#999' }}>OFF</div>}
                 </div>
                 
-                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexWrap: 'wrap', gap: '4px', zIndex: 2, alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', display: 'flex', flexWrap: 'wrap', gap: '6px', zIndex: 2, alignItems: 'center', justifyContent: 'center' }}>
                   {gameState?.players.map(player => {
                     const playerBet = allBets[player.id]?.[betType];
                     if (!playerBet) return null;
                     
                     const isMe = player.id === playerId;
-                    const chipInfo = CHIP_VALUES.find(c => c.value <= playerBet) || CHIP_VALUES[0];
+                    const chipInfo = getChipForAmount(playerBet);
                     
                     return (
-                      <div key={player.id} style={{ textAlign: 'center' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '2px', background: isMe ? 'rgba(255,215,0,0.3)' : 'transparent', padding: '2px', borderRadius: '4px' }}>
-                          <CasinoChip 
-                            chipInfo={chipInfo} 
-                            onClick={() => {}} 
-                            disabled={false} 
-                            small={true}
-                            draggable={isMe}
-                            onDragStart={(e) => {
-                              setDraggedBet({ betType, playerId: player.id });
-                            }}
-                          />
-                          <div style={{ fontSize: '9px', color: '#fff', fontWeight: 'bold', textShadow: '1px 1px 2px #000' }}>
-                            {player.name.substring(0,4)}<br/>${playerBet}
+                      <div key={player.id} style={{ textAlign: 'center', display: 'flex', alignItems: 'center', gap: '4px', background: isMe ? 'rgba(255,215,0,0.4)' : 'rgba(0,0,0,0.3)', padding: '4px 6px', borderRadius: '6px', border: isMe ? '2px solid #ffd700' : '1px solid rgba(255,255,255,0.2)' }}>
+                        <CasinoChip 
+                          chipInfo={chipInfo} 
+                          onClick={() => {}} 
+                          disabled={false} 
+                          small={true}
+                          draggable={isMe}
+                          onDragStart={(e) => {
+                            setIsDraggingChip(true);
+                            setDraggedBetType(betType);
+                            e.dataTransfer.effectAllowed = 'move';
+                          }}
+                          onDragEnd={(e) => {
+                            setIsDraggingChip(false);
+                            setDraggedBetType(null);
+                          }}
+                        />
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+                          <div style={{ fontSize: '10px', color: '#fff', fontWeight: 'bold', textShadow: '1px 1px 2px #000', lineHeight: '1.2' }}>
+                            {player.name.substring(0,6)}
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#ffd700', fontWeight: 'bold', textShadow: '1px 1px 2px #000', lineHeight: '1.2' }}>
+                            ${playerBet}
                           </div>
                         </div>
                       </div>
@@ -949,8 +1024,10 @@
           }
 
           const currentPlayer = gameState.players.find(p => p.id === playerId);
-          const isShooter = currentPlayer && gameState.players[gameState.currentShooter]?.id === playerId;
-          const currentShooterName = gameState.players[gameState.currentShooter]?.name || 'Waiting...';
+          const shooterId = gameState.playerOrder?.[gameState.currentShooter];
+          const isShooter = currentPlayer && shooterId === playerId;
+          const shooter = gameState.players.find(p => p.id === shooterId);
+          const currentShooterName = shooter?.name || 'Waiting...';
           const betsAreOff = gameState.phase === 'comeout';
           const totalOnTable = getTotalBetsOnTable();
           const isAboveStarting = currentPlayer && currentPlayer.chips >= STARTING_CHIPS;
@@ -988,23 +1065,48 @@
                       <li>🎯 Table minimum: $15</li>
                       <li>🎲 Prop minimum: $1</li>
                       <li>👥 Max players: 6</li>
+                      <li>📊 Odds: 3-4-5x</li>
                     </ul>
                   </div>
 
                   {gameState.players.length > 0 && (
                     <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,215,0,0.1)', borderRadius: '10px', border: '1px solid #ffd700' }}>
                       <p style={{ fontWeight: 'bold', fontSize: '14px', marginBottom: '10px', color: '#ffd700' }}>Players at table:</p>
-                      {gameState.players.map(p => (
-                        <div key={p.id} style={{ color: '#fff', fontSize: '14px', marginBottom: '5px' }}>
-                          🎰 {p.name} (${p.chips})
-                        </div>
-                      ))}
+                      {gameState.playerOrder?.map((pid, idx) => {
+                        const p = gameState.players.find(pl => pl.id === pid);
+                        if (!p) return null;
+                        return (
+                          <div key={p.id} style={{ color: '#fff', fontSize: '14px', marginBottom: '5px' }}>
+                            {idx === gameState.currentShooter && '🎲 '}
+                            🎰 {p.name} (${p.chips})
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
               </div>
             );
           }
+
+          const handleDropZoneDragOver = (e) => {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+          };
+
+          const handleDropZoneDragLeave = (e) => {
+            e.currentTarget.classList.remove('drag-over');
+          };
+
+          const handleDropZoneDrop = (e) => {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            
+            if (draggedBetType) {
+              removeBet(draggedBetType);
+              setDraggedBetType(null);
+            }
+          };
 
           return (
             <div style={{ minHeight: '100vh', padding: '10px', background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)', position: 'relative' }}>
@@ -1069,7 +1171,7 @@
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
                     <div>
                       <h1 style={{ fontSize: '24px', fontWeight: 'bold', textShadow: '2px 2px 4px #000' }}>🎲 VEGAS CRAPS TABLE</h1>
-                      <div style={{ fontSize: '12px', color: '#fff' }}>Min: $15 • Prop: $1</div>
+                      <div style={{ fontSize: '12px', color: '#fff' }}>Min: $15 • Prop: $1 • Odds: 3-4-5x</div>
                     </div>
                     <div className="chip-rack" style={{ textAlign: 'center', minWidth: '200px' }}>
                       <div style={{ fontSize: '14px', color: '#ffd700', marginBottom: '5px', fontWeight: 'bold' }}>
@@ -1090,7 +1192,7 @@
                   </div>
                 </div>
 
-                {/* Status Bar with Puck */}
+                {/* Status Bar */}
                 <div style={{ background: '#000', color: '#fff', padding: '15px', borderRadius: '10px', marginBottom: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '3px solid #ffd700' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', fontSize: '16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1119,6 +1221,21 @@
                 {message && (
                   <div style={{ background: 'linear-gradient(135deg, #0066ff 0%, #0044cc 100%)', color: '#fff', padding: '15px', borderRadius: '10px', marginBottom: '10px', textAlign: 'center', fontWeight: 'bold', boxShadow: '0 4px 12px rgba(0,102,255,0.5)' }}>
                     {message}
+                  </div>
+                )}
+
+                {/* DROP ZONE for dragged chips */}
+                {isDraggingChip && (
+                  <div 
+                    className="drop-zone"
+                    onDragOver={handleDropZoneDragOver}
+                    onDragLeave={handleDropZoneDragLeave}
+                    onDrop={handleDropZoneDrop}
+                    style={{ marginBottom: '10px' }}
+                  >
+                    <div style={{ fontSize: '20px', color: '#ffd700', fontWeight: 'bold' }}>
+                      ⬇️ Drop Chip Here to Return to Rack ⬇️
+                    </div>
                   </div>
                 )}
 
@@ -1257,6 +1374,7 @@
                     </div>
                   )}
 
+                  {/* PASS LINE AT BOTTOM */}
                   <div>
                     <BetBox betType="pass" label="PASS LINE" style={{ height: '70px', fontSize: '24px', background: 'rgba(255,255,255,0.15)', fontWeight: 'bold' }} />
                   </div>
@@ -1295,7 +1413,7 @@
                   )}
                 </div>
 
-                {/* Players */}
+                {/* Players - Ordered by join time */}
                 <div style={{ background: 'linear-gradient(135deg, #000 0%, #1a1a1a 100%)', color: '#fff', padding: '15px', borderRadius: '10px', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', border: '2px solid #ffd700' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
                     <h3 style={{ fontWeight: 'bold', fontSize: '18px', color: '#ffd700' }}>Players ({gameState.players.length}/6)</h3>
@@ -1315,29 +1433,34 @@
                     </button>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {gameState.players.map((player, idx) => (
-                      <div
-                        key={player.id}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          padding: '12px',
-                          borderRadius: '8px',
-                          background: player.id === playerId ? 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)' : '#333',
-                          color: player.id === playerId ? '#000' : '#fff',
-                          fontWeight: 'bold',
-                          border: idx === gameState.currentShooter ? '3px solid #ff0000' : 'none'
-                        }}
-                      >
-                        <span>
-                          {idx === gameState.currentShooter && '🎲 '}
-                          {player.name}
-                          {player.id === playerId && ' (YOU)'}
-                        </span>
-                        <span style={{ fontSize: '18px', color: player.id === playerId ? (player.chips >= STARTING_CHIPS ? '#00aa00' : '#ff0000') : (player.chips >= STARTING_CHIPS ? '#00ff00' : '#ff6666') }}>${player.chips}</span>
-                      </div>
-                    ))}
+                    {gameState.playerOrder?.map((pid, idx) => {
+                      const player = gameState.players.find(p => p.id === pid);
+                      if (!player) return null;
+                      
+                      return (
+                        <div
+                          key={player.id}
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            padding: '12px',
+                            borderRadius: '8px',
+                            background: player.id === playerId ? 'linear-gradient(135deg, #ffd700 0%, #ffed4e 100%)' : '#333',
+                            color: player.id === playerId ? '#000' : '#fff',
+                            fontWeight: 'bold',
+                            border: idx === gameState.currentShooter ? '3px solid #ff0000' : 'none'
+                          }}
+                        >
+                          <span>
+                            {idx === gameState.currentShooter && '🎲 '}
+                            {player.name}
+                            {player.id === playerId && ' (YOU)'}
+                          </span>
+                          <span style={{ fontSize: '18px', color: player.id === playerId ? (player.chips >= STARTING_CHIPS ? '#00aa00' : '#ff0000') : (player.chips >= STARTING_CHIPS ? '#00ff00' : '#ff6666') }}>${player.chips}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
